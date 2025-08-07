@@ -19,9 +19,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/app/shared/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import Link from 'next/link';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Profile } from '@/app/domain/profile';
 import { ProfileService } from '@/app/features/profile/application/profile.service';
