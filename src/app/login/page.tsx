@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { KeyRound, Mail, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/shared/hooks/use-toast';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
 declare global {
@@ -282,7 +282,7 @@ export default function LoginPage() {
         </div>
         
         <div className="flex flex-col items-center space-y-2">
-            <div className="w-full max-w-[320px]">
+            <div className="w-full max-w-[320px] flex justify-center">
                 <GoogleLogin
                     onSuccess={(credentialResponse) => {
                         if (credentialResponse.credential) {
