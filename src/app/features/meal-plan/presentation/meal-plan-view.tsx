@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { CircleDollarSign } from 'lucide-react';
 
 
@@ -351,5 +351,3 @@ export const MealPlanView = () => {
     </div>
   );
 };
-
-    
