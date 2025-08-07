@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/shared/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import {
   AlertDialog,
@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { API_BASE_URL } from '@/lib/api';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 type CreditProduct = {
   id: number;

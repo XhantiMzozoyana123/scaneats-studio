@@ -6,7 +6,6 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   register: true,
   skipWaiting: true,
   scope: '/',
-  display: 'standalone',
 });
 
 const nextConfig = {

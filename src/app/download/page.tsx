@@ -2,8 +2,8 @@
 'use client';
 
 import Image from 'next/image';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
-import { InstallationGuide } from '@/components/installation-guide';
+import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
+import { InstallationGuide } from '@/app/shared/components/installation-guide';
 
 export default function DownloadPage() {
   return (
