@@ -115,6 +115,11 @@ export const SallyView = () => {
     if (isLoading) return;
 
     try {
+      // Prime the audio element for playback on mobile
+      if (audioRef.current) {
+        audioRef.current.muted = true;
+        audioRef.current.play().catch(() => {}); // Play and ignore errors, this is just to unlock it
+      }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
@@ -129,14 +134,15 @@ export const SallyView = () => {
   };
   
   const handlePlayAudio = async () => {
-    if (!sallyResponse || isAudioLoading) return;
+    if (!sallyResponse || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
     try {
       const { media: audioDataUri } = await textToSpeech(sallyResponse);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
-          audioRef.current.play();
-          setCanPlayAudio(false); // Hide button after playing
+          audioRef.current.muted = false;
+          await audioRef.current.play();
+          setCanPlayAudio(false);
       }
     } catch (error) {
        toast({
@@ -207,7 +213,7 @@ export const SallyView = () => {
 
         const result = await response.json();
         setSallyResponse(result.agentDialogue);
-        setCanPlayAudio(true);
+        await handlePlayAudio();
 
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
@@ -282,21 +288,6 @@ export const SallyView = () => {
                     <strong>Sally</strong>
                     <span className="text-gray-600"> - {sallyResponse}</span>
                 </div>
-                {canPlayAudio && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handlePlayAudio}
-                    disabled={isAudioLoading}
-                    className="shrink-0 rounded-full text-primary hover:bg-primary/10"
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <PlayCircle className="h-6 w-6" />
-                    )}
-                  </Button>
-                )}
             </div>
            )}
         </div>
