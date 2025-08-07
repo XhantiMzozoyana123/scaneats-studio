@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { BackgroundImage } from '@/app/shared/components/background-image';
 import { API_BASE_URL } from '@/app/shared/lib/api';
