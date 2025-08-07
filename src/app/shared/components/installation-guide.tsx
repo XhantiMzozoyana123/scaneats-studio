@@ -9,9 +9,9 @@ import {
   MoreVertical,
   ArrowDown,
 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/shared/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const AppleInstructions = () => (
   <div className="mt-2 space-y-3 text-left">

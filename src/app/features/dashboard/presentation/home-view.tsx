@@ -2,7 +2,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { View } from '../dashboard.types';
 
 export const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {

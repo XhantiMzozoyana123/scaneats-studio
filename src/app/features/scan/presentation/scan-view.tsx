@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
