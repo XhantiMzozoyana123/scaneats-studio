@@ -108,15 +108,26 @@ export const SallyView = () => {
       recognitionRef.current?.stop();
       return;
     }
+    if (isLoading) return;
 
     try {
-      if (isLoading) return; // Prevent starting new recording while processing
+      // On mobile, audio playback must be initiated by a user gesture.
+      // We play and immediately pause a silent audio track to "unlock" the audio context.
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        audioRef.current.pause();
+      }
+
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
     } catch (error) {
       console.error('Microphone permission error:', error);
- toast({ variant: 'destructive', title: 'Microphone Access Denied', description: 'Please allow microphone access in your browser settings to use this feature.', });
+      toast({ 
+        variant: 'destructive', 
+        title: 'Microphone Access Denied', 
+        description: 'Please allow microphone access in your browser settings to use this feature.', 
+      });
     }
   };
 
