@@ -238,7 +238,8 @@ export const SallyView = () => {
             disabled={isLoading}
             className={cn(
               'relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
-              isLoading && 'cursor-not-allowed'
+              isLoading && 'cursor-not-allowed',
+              isRecording && 'bg-red-600 hover:bg-red-700 active:bg-red-800'
             )}
             aria-label="Activate Voice AI"
           >

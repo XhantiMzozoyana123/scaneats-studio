@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CircleDollarSign } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
+import { cn } from '@/app/shared/lib/utils';
 
 
 const mealRepository = new MealApiRepository();
@@ -335,7 +336,7 @@ export const MealPlanView = () => {
           </div>
         </div>
 
-        <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0">
+        <button onClick={handleMicClick} className={cn("flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0", isRecording && 'bg-gradient-to-r from-red-600 to-red-800')}>
            <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
         </button>
         
