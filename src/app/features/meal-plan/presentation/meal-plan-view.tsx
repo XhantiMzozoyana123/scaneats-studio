@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -11,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/shared/components/ui/button';
 import { CircleDollarSign } from 'lucide-react';
 
 
@@ -204,7 +205,7 @@ export const MealPlanView = () => {
           toast({
               variant: 'destructive',
               title: 'Out of Credits',
-              description: 'You have used all your credits. Please buy more to continue scanning.',
+              description: 'You have used all your credits. Please buy more to continue talking to Sally.',
               action: (
                 <Button onClick={() => router.push('/credits')} className="gap-2">
                   <CircleDollarSign />
@@ -350,3 +351,5 @@ export const MealPlanView = () => {
     </div>
   );
 };
+
+    

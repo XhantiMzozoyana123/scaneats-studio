@@ -9,24 +9,24 @@ import {
 import Image from 'next/image';
 import { format } from 'date-fns';
 
-import { Button } from '@/app/shared/components/ui/button';
-import { Input } from '@/app/shared/components/ui/input';
-import { Label } from '@/app/shared/components/ui/label';
-import { Textarea } from '@/app/shared/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/app/shared/components/ui/select';
+} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/app/shared/components/ui/popover';
-import { Calendar } from '@/app/shared/components/ui/calendar';
-import { Skeleton } from '@/app/shared/components/ui/skeleton';
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import {
   Loader2,
@@ -270,3 +270,5 @@ export const ProfileView = () => {
     </div>
   );
 };
+
+    
