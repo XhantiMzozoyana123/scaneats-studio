@@ -51,7 +51,7 @@ export class ProfileApiRepository implements IProfileRepository {
     // Process credits response
     if (creditRes.ok) {
         const creditData = await creditRes.json();
-        credits = creditData.balance || 0;
+        credits = creditData.credits || 0;
     } else {
         console.error('Failed to fetch credit balance', creditRes.statusText);
     }

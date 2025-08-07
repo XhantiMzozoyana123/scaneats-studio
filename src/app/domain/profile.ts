@@ -7,6 +7,6 @@ export type Profile = {
   goals: string;
   birthDate: Date | null;
   age?: number;
-  isSubscribed?: boolean;
-  credits?: number;
+  isSubscribed: boolean;
+  credits: number;
 };
