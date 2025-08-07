@@ -19,6 +19,7 @@ import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
 import { API_BASE_URL } from '@/app/shared/lib/api';
+import { textToSpeech } from '@/ai/flows/tts-flow';
 
 
 declare global {
@@ -37,6 +38,7 @@ export const SallyView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const { profile, setSubscriptionModalOpen } = useUserData();
   
@@ -175,8 +177,14 @@ export const SallyView = () => {
         }
 
         const result = await response.json();
-
         setSallyResponse(result.agentDialogue);
+        
+        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
+        if (audioDataUri && audioRef.current) {
+            audioRef.current.src = audioDataUri;
+            audioRef.current.play();
+        }
+
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
@@ -251,6 +259,7 @@ export const SallyView = () => {
            )}
         </div>
       </div>
+       <audio ref={audioRef} className="hidden" />
     </div>
   );
 };
