@@ -158,11 +158,11 @@ export const MealPlanView = () => {
     }
   };
 
-  const handlePlayAudio = async () => {
-    if (!sallyResponse || isAudioLoading) return;
+  const handlePlayAudio = async (textToSpeak: string) => {
+    if (!textToSpeak || isAudioLoading) return;
     setIsAudioLoading(true);
     try {
-      const { media: audioDataUri } = await textToSpeech(sallyResponse);
+      const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
           audioRef.current.play();
@@ -251,8 +251,9 @@ export const MealPlanView = () => {
         }
 
         const result = await response.json();
-        setSallyResponse(result.agentDialogue);
-        setCanPlayAudio(true);
+        const agentDialogue = result.agentDialogue;
+        setSallyResponse(agentDialogue);
+        await handlePlayAudio(agentDialogue);
         
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
@@ -371,7 +372,7 @@ export const MealPlanView = () => {
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={handlePlayAudio}
+                    onClick={() => handlePlayAudio(sallyResponse || '')}
                     disabled={isAudioLoading}
                     className="shrink-0 rounded-full text-white hover:bg-white/10"
                   >

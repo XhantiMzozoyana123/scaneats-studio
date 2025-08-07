@@ -133,11 +133,11 @@ export const SallyView = () => {
     }
   };
   
-  const handlePlayAudio = async () => {
-    if (!sallyResponse || isAudioLoading || !audioRef.current) return;
+  const handlePlayAudio = async (textToSpeak: string) => {
+    if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
     try {
-      const { media: audioDataUri } = await textToSpeech(sallyResponse);
+      const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
           audioRef.current.muted = false;
@@ -212,8 +212,9 @@ export const SallyView = () => {
         }
 
         const result = await response.json();
-        setSallyResponse(result.agentDialogue);
-        await handlePlayAudio();
+        const agentDialogue = result.agentDialogue;
+        setSallyResponse(agentDialogue);
+        await handlePlayAudio(agentDialogue);
 
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
