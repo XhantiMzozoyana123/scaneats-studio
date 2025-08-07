@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file initializes and configures the Genkit AI instance.
  * It sets up the necessary plugins, such as Google AI, and exports a configured `ai` object.
@@ -22,5 +23,4 @@ export const ai = genkit({
   // The log level can be set to 'debug' for more detailed output.
   // logLevel: 'debug',
   // This option prevents flow execution data from being stored, which is useful for privacy.
-  flowStateStore: 'noop',
 });
