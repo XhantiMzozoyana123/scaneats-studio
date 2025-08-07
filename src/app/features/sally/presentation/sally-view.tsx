@@ -38,7 +38,6 @@ export const SallyView = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -47,7 +46,6 @@ export const SallyView = () => {
   
   useEffect(() => {
     if (isLoading) {
-      setCanPlayAudio(false);
       const interval = setInterval(() => {
         setLoadingProgress((prev) => {
           if (prev >= 90) {
@@ -72,6 +70,8 @@ export const SallyView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
+        setIsRecording(false);
+        recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
       };
@@ -110,15 +110,15 @@ export const SallyView = () => {
   const handleMicClick = async () => {
     if (isRecording) {
       recognitionRef.current?.stop();
+      setIsRecording(false);
       return;
     }
     if (isLoading) return;
 
     try {
-      // Prime the audio element for playback on mobile
       if (audioRef.current) {
         audioRef.current.muted = true;
-        audioRef.current.play().catch(() => {}); // Play and ignore errors, this is just to unlock it
+        await audioRef.current.play().catch(() => {});
       }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
@@ -142,7 +142,6 @@ export const SallyView = () => {
           audioRef.current.src = audioDataUri;
           audioRef.current.muted = false;
           await audioRef.current.play();
-          setCanPlayAudio(false);
       }
     } catch (error) {
        toast({

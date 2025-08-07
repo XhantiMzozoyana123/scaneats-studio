@@ -28,7 +28,6 @@ export const MealPlanView = () => {
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -78,7 +77,6 @@ export const MealPlanView = () => {
 
   useEffect(() => {
     if (isSallyLoading) {
-      setCanPlayAudio(false);
       const interval = setInterval(() => {
         setSallyProgress((prev) => {
           if (prev >= 90) {
@@ -102,6 +100,8 @@ export const MealPlanView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
+        setIsRecording(false);
+        recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
       };
@@ -140,10 +140,15 @@ export const MealPlanView = () => {
   const handleMicClick = async () => {
     if (isRecording) {
       recognitionRef.current?.stop();
+      setIsRecording(false);
       return;
     }
     try {
       if (isSallyLoading) return;
+       if (audioRef.current) {
+        audioRef.current.muted = true;
+        await audioRef.current.play().catch(() => {});
+      }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
@@ -165,8 +170,8 @@ export const MealPlanView = () => {
       const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
-          audioRef.current.play();
-          setCanPlayAudio(false); // Hide button after playing
+          audioRef.current.muted = false;
+          await audioRef.current.play();
       }
     } catch (error) {
        toast({
@@ -368,21 +373,6 @@ export const MealPlanView = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="flex-grow">{sallyResponse || "Ask me about this meal and I'll tell you everything"}</span>
-                 {canPlayAudio && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handlePlayAudio(sallyResponse || '')}
-                    disabled={isAudioLoading}
-                    className="shrink-0 rounded-full text-white hover:bg-white/10"
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <PlayCircle className="h-6 w-6" />
-                    )}
-                  </Button>
-                )}
               </div>
             )}
         </div>
