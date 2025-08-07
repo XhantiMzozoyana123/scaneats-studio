@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { Loader2, Info, Mic } from 'lucide-react';
+import { Loader2, Info, Mic, PlayCircle, CircleDollarSign } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
 import type { ScannedFood } from '@/app/domain/scanned-food';
@@ -13,7 +13,6 @@ import Image from 'next/image';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { CircleDollarSign } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import { cn } from '@/app/shared/lib/utils';
 
@@ -28,6 +27,8 @@ export const MealPlanView = () => {
   const [isMealLoading, setIsMealLoading] = useState(true);
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -77,6 +78,7 @@ export const MealPlanView = () => {
 
   useEffect(() => {
     if (isSallyLoading) {
+      setCanPlayAudio(false);
       const interval = setInterval(() => {
         setSallyProgress((prev) => {
           if (prev >= 90) {
@@ -156,6 +158,27 @@ export const MealPlanView = () => {
     }
   };
 
+  const handlePlayAudio = async () => {
+    if (!sallyResponse || isAudioLoading) return;
+    setIsAudioLoading(true);
+    try {
+      const { media: audioDataUri } = await textToSpeech(sallyResponse);
+      if (audioDataUri && audioRef.current) {
+          audioRef.current.src = audioDataUri;
+          audioRef.current.play();
+          setCanPlayAudio(false); // Hide button after playing
+      }
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Audio Error',
+        description: 'Could not play audio response.',
+      });
+    } finally {
+      setIsAudioLoading(false);
+    }
+  };
+
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
@@ -229,13 +252,8 @@ export const MealPlanView = () => {
 
         const result = await response.json();
         setSallyResponse(result.agentDialogue);
+        setCanPlayAudio(true);
         
-        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
-        if (audioDataUri && audioRef.current) {
-            audioRef.current.src = audioDataUri;
-            audioRef.current.play();
-        }
-
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
@@ -346,7 +364,26 @@ export const MealPlanView = () => {
                  <Progress value={sallyProgress} className="w-full" />
                  <p className="text-sm text-gray-400">Sally is thinking...</p>
                </div>
-            ) : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="flex-grow">{sallyResponse || "Ask me about this meal and I'll tell you everything"}</span>
+                 {canPlayAudio && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handlePlayAudio}
+                    disabled={isAudioLoading}
+                    className="shrink-0 rounded-full text-white hover:bg-white/10"
+                  >
+                    {isAudioLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-6 w-6" />
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
         </div>
       </div>
       <audio ref={audioRef} className="hidden" />

@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   Loader2,
   Mic,
+  PlayCircle,
 } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
@@ -36,6 +37,8 @@ export const SallyView = () => {
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -44,6 +47,7 @@ export const SallyView = () => {
   
   useEffect(() => {
     if (isLoading) {
+      setCanPlayAudio(false);
       const interval = setInterval(() => {
         setLoadingProgress((prev) => {
           if (prev >= 90) {
@@ -111,13 +115,6 @@ export const SallyView = () => {
     if (isLoading) return;
 
     try {
-      // On mobile, audio playback must be initiated by a user gesture.
-      // We play and immediately pause a silent audio track to "unlock" the audio context.
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
-        audioRef.current.pause();
-      }
-
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
@@ -128,6 +125,27 @@ export const SallyView = () => {
         title: 'Microphone Access Denied', 
         description: 'Please allow microphone access in your browser settings to use this feature.', 
       });
+    }
+  };
+  
+  const handlePlayAudio = async () => {
+    if (!sallyResponse || isAudioLoading) return;
+    setIsAudioLoading(true);
+    try {
+      const { media: audioDataUri } = await textToSpeech(sallyResponse);
+      if (audioDataUri && audioRef.current) {
+          audioRef.current.src = audioDataUri;
+          audioRef.current.play();
+          setCanPlayAudio(false); // Hide button after playing
+      }
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Audio Error',
+        description: 'Could not play audio response.',
+      });
+    } finally {
+      setIsAudioLoading(false);
     }
   };
 
@@ -189,12 +207,7 @@ export const SallyView = () => {
 
         const result = await response.json();
         setSallyResponse(result.agentDialogue);
-        
-        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
-        if (audioDataUri && audioRef.current) {
-            audioRef.current.src = audioDataUri;
-            audioRef.current.play();
-        }
+        setCanPlayAudio(true);
 
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
@@ -264,9 +277,26 @@ export const SallyView = () => {
                 <p className="text-[13px] text-gray-600">Sally is thinking...</p>
               </div>
            ) : (
-            <div className="flex-grow text-[13px] leading-tight text-black">
-              <strong>Sally</strong>
-              <span className="text-gray-600"> - {sallyResponse}</span>
+            <div className="flex items-center gap-2">
+                <div className="flex-grow text-[13px] leading-tight text-black">
+                    <strong>Sally</strong>
+                    <span className="text-gray-600"> - {sallyResponse}</span>
+                </div>
+                {canPlayAudio && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handlePlayAudio}
+                    disabled={isAudioLoading}
+                    className="shrink-0 rounded-full text-primary hover:bg-primary/10"
+                  >
+                    {isAudioLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-6 w-6" />
+                    )}
+                  </Button>
+                )}
             </div>
            )}
         </div>
