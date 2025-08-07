@@ -14,6 +14,7 @@ import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CircleDollarSign } from 'lucide-react';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 
 const mealRepository = new MealApiRepository();
