@@ -16,15 +16,23 @@ const initialProfileState: Profile = {
 
 export class ProfileApiRepository implements IProfileRepository {
   async getProfile(token: string): Promise<{ profile: Profile | null; isSubscribed: boolean }> {
-    const profileRes = await fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } });
+    const headers = { Authorization: `Bearer ${token}` };
 
-    if (profileRes.status === 401) {
+    // Fetch profile and credit balance in parallel
+    const [profileRes, creditRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/profile`, { headers }),
+      fetch(`${API_BASE_URL}/api/credit/balance`, { headers }),
+    ]);
+
+    if (profileRes.status === 401 || creditRes.status === 401) {
         throw new Error('Session Expired');
     }
 
     let userProfile = initialProfileState;
     let isSubscribed = false;
+    let credits = 0;
 
+    // Process profile response
     if (profileRes.ok) {
         const profiles = await profileRes.json();
         if (profiles && profiles.length > 0) {
@@ -33,17 +41,24 @@ export class ProfileApiRepository implements IProfileRepository {
                 ...p,
                 birthDate: p.BirthDate ? new Date(p.BirthDate) : null,
                 weight: p.Weight || '',
-                credits: p.Credits || 0,
             };
-            // Assume subscription status comes with the profile
             isSubscribed = p.isSubscribed ?? false;
         }
     } else if (profileRes.status !== 404) {
          console.error('Failed to fetch profile', profileRes.statusText);
     }
+    
+    // Process credits response
+    if (creditRes.ok) {
+        const creditData = await creditRes.json();
+        credits = creditData.balance || 0;
+    } else {
+        console.error('Failed to fetch credit balance', creditRes.statusText);
+    }
 
-    const finalProfile = { ...userProfile, isSubscribed: isSubscribed };
-    return { profile: finalProfile, isSubscribed: isSubscribed };
+    // Merge all data into the final profile object
+    const finalProfile = { ...userProfile, isSubscribed, credits };
+    return { profile: finalProfile, isSubscribed };
   }
 
   async saveProfile(token: string, profileData: Profile): Promise<Profile> {
