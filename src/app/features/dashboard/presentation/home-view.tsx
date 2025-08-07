@@ -41,7 +41,7 @@ export const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
             ScanEats
           </h1>
           <h2 className="font-body text-xl font-light text-gray-200 opacity-90 md:text-2xl">
-            Welcome home, wink wink
+            Your AI Nutritionist
           </h2>
           <p className="mx-auto max-w-md font-body text-base leading-relaxed text-gray-300 opacity-95 md:text-lg">
             Meet Sally, your personal assistant who’ll help you stay on track

@@ -1,148 +1,268 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { Loader2, Info, Sparkles } from 'lucide-react';
+import { Loader2, Info, Mic } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
 import type { ScannedFood } from '@/app/domain/scanned-food';
 import { useUserData } from '@/app/shared/context/user-data-context';
-import { getMealInsight } from '@/ai/flows/meal-insight-flow';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { textToSpeech } from '@/ai/flows/tts-flow';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { CircleDollarSign } from 'lucide-react';
+
 
 const mealRepository = new MealApiRepository();
 const mealService = new MealService(mealRepository);
 
-const StatCard = ({ label, value, unit }: { label: string, value: string, unit: string }) => (
-  <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-800/50 p-4 shadow-md">
-    <div className="text-3xl font-bold text-white">{value}</div>
-    <div className="text-sm font-light text-gray-400">{label}</div>
-    <div className="text-xs text-gray-500">{unit}</div>
-  </div>
-);
-
-const MacroBreakdown = ({
-  carbs,
-  protein,
-  fat,
-}: {
-  carbs: number;
-  protein: number;
-  fat: number;
-}) => {
-  const total = carbs + protein + fat;
-  if (total === 0) return null;
-
-  const carbPercent = Math.round((carbs / total) * 100);
-  const proteinPercent = Math.round((protein / total) * 100);
-  const fatPercent = 100 - carbPercent - proteinPercent; // To ensure it adds up to 100
-
-  return (
-    <div className="mt-4 flex w-full h-4 rounded-full overflow-hidden bg-zinc-700">
-      <div
-        className="bg-green-500"
-        style={{ width: `${carbPercent}%` }}
-        title={`Carbs: ${carbPercent}%`}
-      />
-      <div
-        className="bg-red-500"
-        style={{ width: `${proteinPercent}%` }}
-        title={`Protein: ${proteinPercent}%`}
-      />
-      <div
-        className="bg-yellow-500"
-        style={{ width: `${fatPercent}%` }}
-        title={`Fat: ${fatPercent}%`}
-      />
-    </div>
-  );
-};
-
 export const MealPlanView = () => {
   const { toast } = useToast();
-  const { profile } = useUserData();
+  const { profile, setSubscriptionModalOpen } = useUserData();
   const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isMealLoading, setIsMealLoading] = useState(true);
-  const [insight, setInsight] = useState<string | null>(null);
-  const [isInsightLoading, setIsInsightLoading] = useState(false);
+  const [sallyResponse, setSallyResponse] = useState<string | null>(null);
+  const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const router = useRouter();
+  const [sallyProgress, setSallyProgress] = useState(0);
 
-  useEffect(() => {
-    const fetchMealPlan = async () => {
-      console.log('MealPlanView: useEffect triggered. Starting fetch.');
-      setIsMealLoading(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        console.log('MealPlanView: No auth token found.');
+  const fetchMealPlan = useCallback(async () => {
+    setIsMealLoading(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Authenticated',
+        description: 'Please log in to view your meal plan.',
+      });
+      setIsMealLoading(false);
+      return;
+    }
+  
+    try {
+      const meal = await mealService.getLastMealPlan(token);
+      setScannedFood(meal);
+    } catch (error: any) {
+      if (error.message === 'Session Expired') {
         toast({
           variant: 'destructive',
-          title: 'Not Authenticated',
-          description: 'Please log in to view your meal plan.',
+          title: 'Session Expired',
+          description: 'Please log in to continue.',
         });
-        setIsMealLoading(false);
-        return;
-      }
-
-      try {
-        console.log('MealPlanView: Calling mealService.getLastMealPlan...');
-        const meal = await mealService.getLastMealPlan(token);
-        console.log('MealPlanView: Fetched meal data:', meal);
-        setScannedFood(meal);
-      } catch (error: any) {
-        console.error('MealPlanView: Error fetching meal plan:', error);
+        router.push('/login');
+      } else {
         toast({
           variant: 'destructive',
           title: 'Failed to load meal plan',
           description: error.message,
         });
-      } finally {
-        console.log('MealPlanView: Fetch finished. Setting isMealLoading to false.');
-        setIsMealLoading(false);
       }
-    };
-
-    fetchMealPlan();
-  }, [toast]);
+    } finally {
+      setIsMealLoading(false);
+    }
+  }, [router, toast]);
 
   useEffect(() => {
-    const fetchInsight = async () => {
-      if (scannedFood && profile) {
-        setIsInsightLoading(true);
-        setInsight(null);
-        try {
-          const result = await getMealInsight({
-            profile: profile,
-            meal: scannedFood,
+    fetchMealPlan();
+  }, [fetchMealPlan]);
+
+
+  useEffect(() => {
+    if (isSallyLoading) {
+      const interval = setInterval(() => {
+        setSallyProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isSallyLoading]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        if (event.error === 'not-allowed') {
+          toast({
+            variant: 'destructive',
+            title: 'Microphone Access Denied',
+            description:
+              'Please allow microphone access in your browser settings to use this feature.',
           });
-          setInsight(result);
-        } catch (error) {
-          console.error("Failed to get meal insight:", error);
-          setInsight("Sorry, I couldn't generate an insight for this meal right now.");
-        } finally {
-          setIsInsightLoading(false);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Speech Error',
+            description: `Could not recognize speech: ${event.error}. Please try again.`,
+          });
         }
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
+
+  const handleMicClick = async () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    try {
+      if (isSallyLoading) return;
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setIsRecording(true);
+      recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Microphone Access Denied',
+        description:
+          'Please allow microphone access in your browser settings to use this feature.',
+      });
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim()) return;
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
+        router.push('/login');
+        return;
+    }
+    
+    if (!profile?.name) {
+       toast({
+          variant: 'destructive',
+          title: 'Profile Incomplete',
+          description: 'Please complete your profile before talking to Sally.',
+       });
+       return;
+    }
+
+    setIsSallyLoading(true);
+    setSallyProgress(10);
+    setSallyResponse(`Thinking about: "${userInput}"`);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ClientName: profile.name,
+            ClientDialogue: userInput,
+          }),
+        });
+        
+        if (response.status === 401) {
+            toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
+            router.push('/login');
+            throw new Error('Unauthorized');
+        }
+
+        if (response.status === 403) {
+            setSubscriptionModalOpen(true);
+            throw new Error('Subscription required');
+        }
+        
+        if (response.status === 429) {
+          toast({
+              variant: 'destructive',
+              title: 'Out of Credits',
+              description: 'You have used all your credits. Please buy more to continue scanning.',
+              action: (
+                <Button onClick={() => router.push('/credits')} className="gap-2">
+                  <CircleDollarSign />
+                  Buy Credits
+                </Button>
+              )
+          });
+          throw new Error('Out of credits');
+        }
+        
+        if (!response.ok) {
+            let errorMsg = "Sally failed to respond";
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorData.error || errorMsg;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+
+        const result = await response.json();
+        setSallyResponse(result.agentDialogue);
+        
+        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
+        if (audioDataUri && audioRef.current) {
+            audioRef.current.src = audioDataUri;
+            audioRef.current.play();
+        }
+
+    } catch (error: any) {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || 'An error occurred while talking to Sally.',
+        });
       }
-    };
-
-    fetchInsight();
-  }, [scannedFood, profile]);
-
+    } finally {
+      setSallyProgress(100);
+      setTimeout(() => setIsSallyLoading(false), 500);
+    }
+  };
+  
   const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
     if (!scannedFood) {
-      console.log('MealPlanView: useMemo - scannedFood is null, returning zero values.');
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
-    const calculated = {
+    return {
       totalCalories: scannedFood.total || 0,
       totalProtein: scannedFood.protein || 0,
       totalCarbs: scannedFood.carbs || 0,
       totalFat: scannedFood.fat || 0,
     };
-    console.log('MealPlanView: useMemo - calculated values:', calculated);
-    return calculated;
   }, [scannedFood]);
 
+
   if (isMealLoading) {
-    console.log('MealPlanView: Rendering loading state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-2">
@@ -154,7 +274,6 @@ export const MealPlanView = () => {
   }
 
   if (!scannedFood) {
-    console.log('MealPlanView: Rendering "No food scanned yet" state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4 text-center">
@@ -165,54 +284,70 @@ export const MealPlanView = () => {
       </div>
     );
   }
-
-  console.log('MealPlanView: Rendering meal data.');
+  
   return (
-    <div className="h-full overflow-y-auto bg-zinc-950 text-white p-4 pb-28">
-       <header className="sticky top-0 z-10 w-full p-4 mb-4">
-        <div className="container mx-auto flex items-center justify-center">
-          <h1 className="text-xl font-semibold">Your Last Meal</h1>
+    <div className="relative h-full w-full flex-grow">
+      <video
+        src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
+        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+      <div className="fixed inset-0 -z-10 bg-black/60" />
+      
+      <div className="flex h-full w-full flex-col items-center p-5 pb-[155px] box-border overflow-y-auto">
+        <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-sizing-border shrink-0">
+          <div className="w-[150px] h-[75px] text-left">
+            <Image
+              src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+              alt="ScanEats Logo"
+              width={150}
+              height={75}
+              className="max-w-full max-h-full block object-contain"
+            />
+          </div>
+        </header>
+        
+        <div className="text-center flex flex-col items-center mb-[25px] shrink-0">
+          <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
+              {scannedFood.total.toFixed(0)}
+          </div>
+          <div className="text-sm md:text-base text-white bg-[rgba(34,34,34,0.7)] px-3 py-1.5 rounded-full tracking-wider">
+              Total Calories
+          </div>
         </div>
-      </header>
 
-      <div className="w-full max-w-2xl mx-auto space-y-6">
-        <div className="frosted-card p-6">
-          <h2 className="text-2xl font-bold text-primary mb-2">{scannedFood.name}</h2>
-          <p className="font-headline text-4xl font-bold text-white">
-            {totalCalories.toFixed(0)}
-            <span className="text-lg font-light text-gray-400"> cal</span>
-          </p>
-          <MacroBreakdown carbs={totalCarbs} protein={totalProtein} fat={totalFat} />
-           <div className="flex justify-center gap-2 mt-2 text-xs text-gray-400">
-              <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-green-500"/>Carbs</span>
-              <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500"/>Protein</span>
-              <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-yellow-500"/>Fat</span>
-           </div>
+        <div className="flex justify-around items-stretch mb-[25px] w-full max-w-[550px] gap-[15px] flex-wrap shrink-0">
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Protein</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{scannedFood.protein.toFixed(0)}g</div>
+          </div>
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Fat</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{scannedFood.fat.toFixed(0)}g</div>
+          </div>
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Carbs</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{scannedFood.carbs.toFixed(0)}g</div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard label="Carbs" value={totalCarbs.toFixed(1)} unit="grams" />
-          <StatCard label="Protein" value={totalProtein.toFixed(1)} unit="grams" />
-          <StatCard label="Fat" value={totalFat.toFixed(1)} unit="grams" />
-        </div>
-
-        <div className="frosted-card p-6">
-           <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Nutritional Insights
-            </h3>
-            {isInsightLoading ? (
-                 <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <Loader2 className="h-4 w-4 animate-spin"/>
-                    Sally is analyzing your meal...
-                 </div>
-            ) : (
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {insight}
-                </p>
-            )}
+        <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0">
+           <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
+        </button>
+        
+        <div className="text-center mt-4 mb-8 text-white text-shadow-[0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)] text-lg font-normal bg-transparent px-5 py-3 rounded-2xl inline-block max-w-[85%] shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] border-l-4 border-[#a033ff] shrink-0">
+           {isSallyLoading ? (
+               <div className="space-y-2 text-center">
+                 <Progress value={sallyProgress} className="w-full" />
+                 <p className="text-sm text-gray-400">Sally is thinking...</p>
+               </div>
+            ) : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
         </div>
       </div>
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 };

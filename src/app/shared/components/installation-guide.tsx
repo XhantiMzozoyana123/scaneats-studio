@@ -86,10 +86,10 @@ const AndroidInstructions = ({
         <div
           className="flex w-full animate-fade-in-2 items-center gap-3"
           style={{ animationDelay: '0.2s' }}
-        >
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg font-bold text-primary">
-            2
-          </span>
+    >
+      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg font-bold text-primary">
+        2
+      </span>
           <p className="text-sm">
             Tap <strong>'Install app'</strong> or{' '}
             <strong>'Add to Home screen'</strong>.

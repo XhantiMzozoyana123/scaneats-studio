@@ -19,12 +19,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/app/shared/components/ui/alert-dialog';
 import Link from 'next/link';
 import { Button } from '@/app/shared/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Profile } from '@/app/domain/profile';
-import type { ScannedFood } from '@/app/domain/scanned-food';
 import { ProfileService } from '@/app/features/profile/application/profile.service';
 import { ProfileApiRepository } from '@/app/data/profile/profile-api.repository';
 
@@ -33,8 +32,6 @@ type UserDataContextType = {
   profile: Profile | null;
   initialProfile: Profile | null;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
-  scannedFood: ScannedFood | null;
-  setScannedFood: (food: ScannedFood | null) => void;
   isLoading: boolean;
   saveProfile: (profile: Profile) => Promise<boolean>;
   fetchProfile: () => void;
@@ -66,7 +63,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(initialProfileState);
   const [initialProfile, setInitialProfile] = useState<Profile | null>(initialProfileState);
-  const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   
@@ -145,8 +141,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     profile,
     initialProfile,
     setProfile,
-    scannedFood,
-    setScannedFood,
     isLoading,
     saveProfile,
     fetchProfile,

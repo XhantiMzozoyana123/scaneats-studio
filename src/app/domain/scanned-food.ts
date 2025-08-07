@@ -2,8 +2,8 @@
 export type ScannedFood = {
   id: number;
   name: string;
-  Total: number;
-  Protein: number; 
-  Fat: number;
-  Carbs: number;
+  total: number;
+  protein: number; 
+  fat: number;
+  carbs: number;
 };

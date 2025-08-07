@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/shared/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
@@ -21,7 +21,7 @@ import type { View } from '@/app/features/dashboard/dashboard.types';
 
 export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, setScannedFood } = useUserData();
+  const { profile, setSubscriptionModalOpen } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
