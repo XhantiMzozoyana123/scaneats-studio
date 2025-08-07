@@ -18,6 +18,10 @@ function PaymentSuccessContent() {
   const [message, setMessage] = useState({ title: '', description: '' });
 
   useEffect(() => {
+    if (!searchParams) {
+      return; // Return early if searchParams is null
+    }
+
     const reference = searchParams.get('reference');
 
     if (!reference) {

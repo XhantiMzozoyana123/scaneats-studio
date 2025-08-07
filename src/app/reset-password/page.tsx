@@ -23,6 +23,10 @@ function ResetPasswordForm() {
     const [id, setId] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!searchParams) {
+            return;
+        }
+
         const tokenParam = searchParams.get('token');
         const idParam = searchParams.get('id');
 
