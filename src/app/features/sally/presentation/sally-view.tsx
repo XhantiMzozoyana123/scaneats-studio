@@ -1,27 +1,18 @@
 
 'use client';
 
-import {
-  useState,
-  useEffect,
-  useRef,
-} from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import {
-  Loader2,
-  Mic,
-  CircleDollarSign,
-  Play,
-} from 'lucide-react';
+import { Loader2, Mic, CircleDollarSign, Play } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
 import { textToSpeech } from '@/ai/flows/tts-flow';
-import { getBodyAssessment } from '@/ai/flows/sally-body-assessment-flow';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 declare global {
   interface Window {
@@ -43,7 +34,7 @@ export const SallyView = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const { profile, setSubscriptionModalOpen, fetchProfile } = useUserData();
-  
+
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
@@ -58,7 +49,6 @@ export const SallyView = () => {
       return () => clearInterval(interval);
     }
   }, [isLoading]);
-
 
   useEffect(() => {
     const SpeechRecognition =
@@ -76,14 +66,15 @@ export const SallyView = () => {
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-         if (event.error === 'network') {
-           toast({
-             variant: 'destructive',
-             title: 'Speech Error',
-             description: 'Could not recognize speech: network error. Please check your connection.',
-           });
+        if (event.error === 'network') {
+          toast({
+            variant: 'destructive',
+            title: 'Speech Error',
+            description:
+              'Could not recognize speech: network error. Please check your connection.',
+          });
         } else if (event.error === 'not-allowed') {
-           toast({
+          toast({
             variant: 'destructive',
             title: 'Microphone Access Denied',
             description:
@@ -99,11 +90,10 @@ export const SallyView = () => {
         setIsLoading(false);
         setIsRecording(false);
       };
-      
+
       recognitionRef.current.onend = () => {
         // This is handled by other state changes to prevent race conditions.
       };
-
     } else {
       toast({
         variant: 'destructive',
@@ -129,112 +119,140 @@ export const SallyView = () => {
       recognitionRef.current?.start();
     } catch (error) {
       console.error('Microphone permission error:', error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Microphone Access Denied', 
-        description: 'Please allow microphone access in your browser settings to use this feature.', 
+      toast({
+        variant: 'destructive',
+        title: 'Microphone Access Denied',
+        description:
+          'Please allow microphone access in your browser settings to use this feature.',
       });
       setIsRecording(false);
     }
   };
-  
+
   const handlePlayAudio = async (textToSpeak: string) => {
     if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
 
     try {
-        const { media: audioDataUri } = await textToSpeech(textToSpeak);
-        const audio = audioRef.current;
+      const { media: audioDataUri } = await textToSpeech(textToSpeak);
+      const audio = audioRef.current;
 
-        if (audioDataUri && audio) {
-            audio.src = audioDataUri;
-            await new Promise((resolve, reject) => {
-                audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
-                audio.onended = resolve;
-                audio.onerror = reject;
-            });
-        } else {
-            throw new Error('Audio data was not received from the text-to-speech service.');
-        }
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Audio Error',
-            description: error.message || 'Could not play audio response.',
+      if (audioDataUri && audio) {
+        audio.src = audioDataUri;
+        await new Promise((resolve, reject) => {
+          audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
+          audio.onended = resolve;
+          audio.onerror = reject;
         });
+      } else {
+        throw new Error(
+          'Audio data was not received from the text-to-speech service.'
+        );
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Audio Error',
+        description: error.message || 'Could not play audio response.',
+      });
     } finally {
-        setIsAudioLoading(false);
+      setIsAudioLoading(false);
     }
   };
 
- const handleApiCall = async (userInput: string) => {
+  const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) {
-        setIsRecording(false);
-        return;
+      setIsRecording(false);
+      return;
     }
 
     if (!profile) {
-        toast({ variant: 'destructive', title: 'Profile not loaded', description: 'Please wait for your profile to load.' });
-        setIsRecording(false);
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Profile not loaded',
+        description: 'Please wait for your profile to load.',
+      });
+      setIsRecording(false);
+      return;
     }
 
     const authToken = localStorage.getItem('authToken');
     if (!authToken) {
-      toast({ variant: 'destructive', title: 'Authentication Error', description: 'Please log in again.' });
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'Please log in again.',
+      });
+      router.push('/login');
       setIsRecording(false);
       return;
     }
-    
+
     setIsLoading(true);
-    setIsRecording(true); 
+    setIsRecording(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
-        const result = await getBodyAssessment({
+      const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
           clientDialogue: userInput,
-          userProfile: profile,
-          authToken: authToken,
+          clientName: profile.name,
+        }),
+      });
+
+      if (response.status === 403) {
+        setSubscriptionModalOpen(true);
+        setSallyResponse('You need a subscription for this feature.');
+        return;
+      }
+
+      if (response.status === 429) {
+        setSallyResponse("You're out of credits! Please buy more.");
+        toast({
+          variant: 'destructive',
+          title: 'Out of Credits',
+          description:
+            'You have used all your credits. Please buy more to continue talking to Sally.',
+          action: (
+            <Button
+              onClick={() => router.push('/credits')}
+              className="gap-2"
+            >
+              <CircleDollarSign />
+              Buy Credits
+            </Button>
+          ),
         });
+        return;
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `An error occurred: ${response.statusText}`);
+      }
 
-        if (result.error) {
-          if (result.error === 'subscription_required') {
-            setSubscriptionModalOpen(true);
-            setSallyResponse("You need a subscription for this feature.");
-          } else if (result.error === 'insufficient_credits') {
-            setSallyResponse("You're out of credits! Please buy more.");
-            toast({
-              variant: 'destructive',
-              title: 'Out of Credits',
-              description: 'You have used all your credits. Please buy more to continue talking to Sally.',
-              action: (
-                <Button onClick={() => router.push('/credits')} className="gap-2">
-                  <CircleDollarSign />
-                  Buy Credits
-                </Button>
-              )
-            });
-          } else {
-            throw new Error(result.error);
-          }
-          return; 
-        }
-        
-        if (!result.agentDialogue) {
-          throw new Error("Sally didn't provide a response.");
-        }
+      const result = await response.json();
 
-        setSallyResponse(result.agentDialogue);
-        await handlePlayAudio(result.agentDialogue);
-        await fetchProfile(); 
+      if (!result.agentDialogue) {
+        throw new Error("Sally didn't provide a response.");
+      }
 
+      setSallyResponse(result.agentDialogue);
+      await handlePlayAudio(result.agentDialogue);
+      await fetchProfile(); // Refresh credits
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'An error occurred while talking to Sally.',
+        description:
+          error.message || 'An error occurred while talking to Sally.',
       });
     } finally {
       setLoadingProgress(100);
@@ -244,7 +262,6 @@ export const SallyView = () => {
       }, 500);
     }
   };
-
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50 p-4">
@@ -295,27 +312,41 @@ export const SallyView = () => {
         </div>
 
         <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
-           {isLoading ? (
-              <div className="space-y-2 text-center">
-                <Progress value={loadingProgress} className="w-full" />
-                <p className="text-[13px] text-gray-600">Sally is thinking...</p>
-              </div>
-           ) : (
+          {isLoading ? (
+            <div className="space-y-2 text-center">
+              <Progress value={loadingProgress} className="w-full" />
+              <p className="text-[13px] text-gray-600">Sally is thinking...</p>
+            </div>
+          ) : (
             <div className="flex items-center gap-2">
-                <div className="flex-grow text-[13px] leading-tight text-black">
-                    <strong>Sally</strong>
-                    <span className="text-gray-600"> - {sallyResponse}</span>
-                </div>
-                 {sallyResponse && !sallyResponse.startsWith("I'm your personal assistant") && !sallyResponse.startsWith("Thinking about:") &&(
-                  <Button size="icon" variant="ghost" className="shrink-0" onClick={() => handlePlayAudio(sallyResponse)} disabled={isAudioLoading}>
-                    {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Play className="h-5 w-5"/>}
+              <div className="flex-grow text-[13px] leading-tight text-black">
+                <strong>Sally</strong>
+                <span className="text-gray-600"> - {sallyResponse}</span>
+              </div>
+              {sallyResponse &&
+                !sallyResponse.startsWith("I'm your personal assistant") &&
+                !sallyResponse.startsWith('Thinking about:') &&
+                !sallyResponse.startsWith('You need a subscription') &&
+                !sallyResponse.startsWith("You're out of credits") && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="shrink-0"
+                    onClick={() => handlePlayAudio(sallyResponse)}
+                    disabled={isAudioLoading}
+                  >
+                    {isAudioLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Play className="h-5 w-5" />
+                    )}
                   </Button>
                 )}
             </div>
-           )}
+          )}
         </div>
       </div>
-       <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 };
