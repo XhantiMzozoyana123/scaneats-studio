@@ -14,6 +14,7 @@ import {
   Loader2,
   Mic,
   CircleDollarSign,
+  Play,
 } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
@@ -291,6 +292,11 @@ export const SallyView = () => {
                     <strong>Sally</strong>
                     <span className="text-gray-600"> - {sallyResponse}</span>
                 </div>
+                 {sallyResponse && !sallyResponse.startsWith("I'm your personal assistant") && !sallyResponse.startsWith("Thinking about:") &&(
+                  <Button size="icon" variant="ghost" className="shrink-0" onClick={() => handlePlayAudio(sallyResponse)} disabled={isAudioLoading}>
+                    {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Play className="h-5 w-5"/>}
+                  </Button>
+                )}
             </div>
            )}
         </div>

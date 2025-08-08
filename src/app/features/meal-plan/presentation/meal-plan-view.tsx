@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { Loader2, Info, Mic, CircleDollarSign } from 'lucide-react';
+import { Loader2, Info, Mic, CircleDollarSign, Play } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
 import type { ScannedFood } from '@/app/domain/scanned-food';
@@ -348,6 +348,11 @@ export const MealPlanView = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="flex-grow">{sallyResponse || "Ask me about this meal and I'll tell you everything"}</span>
+                 {sallyResponse && !sallyResponse.startsWith("Thinking about:") && (
+                    <Button size="icon" variant="ghost" className="shrink-0" onClick={() => handlePlayAudio(sallyResponse)} disabled={isAudioLoading}>
+                      {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Play className="h-5 w-5"/>}
+                    </Button>
+                  )}
               </div>
             )}
         </div>
