@@ -6,48 +6,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import type { Profile } from '@/app/domain/profile';
-import type { ScannedFood } from '@/app/domain/scanned-food';
 import { verifyAccessTool } from '@/ai/tools/verify-access-tool';
 import { deductCreditTool } from '@/ai/tools/deduct-credit-tool';
-
-// Define the schema for the user profile part of the input
-const ProfileSchema = z.object({
-  id: z.number().nullable(),
-  name: z.string(),
-  gender: z.string(),
-  weight: z.union([z.number(), z.string()]),
-  goals: z.string(),
-  birthDate: z.date().nullable(),
-  age: z.number().optional(),
-  isSubscribed: z.boolean(),
-  credits: z.number(),
-});
-
-// Define the schema for the scanned food
-const ScannedFoodSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  total: z.number(),
-  protein: z.number(),
-  fat: z.number(),
-  carbs: z.number(),
-});
-
-// Define the input schema for the main flow
-const MealPlannerInputSchema = z.object({
-  clientDialogue: z.string().describe("The user's question or statement about their meal."),
-  userProfile: ProfileSchema.describe("The user's profile data."),
-  lastScannedFood: ScannedFoodSchema.describe("The details of the last food item the user scanned."),
-});
-export type MealPlannerInput = z.infer<typeof MealPlannerInputSchema>;
-
-// Define the output schema for the main flow
-const MealPlannerOutputSchema = z.object({
-  agentDialogue: z.string().optional().describe("Sally's textual response to the user."),
-  error: z.string().optional().describe("An error message if the process failed (e.g., 'subscription_required', 'insufficient_credits')."),
-});
-export type MealPlannerOutput = z.infer<typeof MealPlannerOutputSchema>;
+import { MealPlannerInputSchema, MealPlannerOutputSchema, type MealPlannerInput, type MealPlannerOutput } from '../schemas';
 
 const prompt = ai.definePrompt(
   {
@@ -81,35 +42,44 @@ export async function getMealPlanInsight(input: MealPlannerInput): Promise<MealP
     return { error: 'unauthorized' };
   }
 
-  // Manually call the verification tool first for reliability
-  const access = await verifyAccessTool({ authToken });
+  const flow = ai.defineFlow({
+      name: 'mealPlanInsightFlow',
+      inputSchema: MealPlannerInputSchema,
+      outputSchema: MealPlannerOutputSchema,
+  }, async (flowInput) => {
+    // Manually call the verification tool first for reliability
+    const access = await verifyAccessTool({ authToken });
 
-  if (!access.canAccess) {
-    return { error: access.reason };
-  }
-  
-  try {
-    const { output } = await prompt(input, {
-        tools: [
-            ai.tool(verifyAccessTool, async () => ({ authToken })),
-            ai.tool(deductCreditTool, async () => ({ authToken, creditsToDeduct: 1 }))
-        ]
-    });
-
-    if (!output?.agentDialogue) {
-      return { error: 'AI failed to generate a response after performing actions.' };
-    }
-
-    // Manually deduct credit after successful response for reliability
-    const deduction = await deductCreditTool({ authToken, creditsToDeduct: 1 });
-    if (!deduction.success) {
-      console.warn("Failed to deduct credit after successful response:", deduction.message);
+    if (!access.canAccess) {
+      return { error: access.reason };
     }
     
-    return { agentDialogue: output.agentDialogue };
+    try {
+      const { output } = await prompt(flowInput);
 
-  } catch (e: any) {
-    console.error("Error in getMealPlanInsight flow:", e);
-    return { error: e.message || "An unexpected error occurred." };
-  }
+      if (!output?.agentDialogue) {
+        return { error: 'AI failed to generate a response after performing actions.' };
+      }
+
+      // Manually deduct credit after successful response for reliability
+      const deduction = await deductCreditTool({ authToken, creditsToDeduct: 1 });
+      if (!deduction.success) {
+        console.warn("Failed to deduct credit after successful response:", deduction.message);
+      }
+      
+      return { agentDialogue: output.agentDialogue };
+
+    } catch (e: any) {
+      console.error("Error in getMealPlanInsight flow:", e);
+      if (e.message && e.message.includes('subscription_required')) {
+          return { error: 'subscription_required' };
+      }
+      if (e.message && e.message.includes('insufficient_credits')) {
+          return { error: 'insufficient_credits' };
+      }
+      return { error: e.message || "An unexpected error occurred." };
+    }
+  });
+
+  return await flow(input);
 }

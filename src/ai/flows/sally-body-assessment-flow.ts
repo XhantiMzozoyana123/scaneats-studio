@@ -6,36 +6,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import type { Profile } from '@/app/domain/profile';
 import { verifyAccessTool } from '@/ai/tools/verify-access-tool';
 import { deductCreditTool } from '@/ai/tools/deduct-credit-tool';
+import { BodyAssessmentInputSchema, BodyAssessmentOutputSchema, type BodyAssessmentInput, type BodyAssessmentOutput } from '../schemas';
 
-// Define the schema for the user profile part of the input
-const ProfileSchema = z.object({
-  id: z.number().nullable(),
-  name: z.string(),
-  gender: z.string(),
-  weight: z.union([z.number(), z.string()]),
-  goals: z.string(),
-  birthDate: z.date().nullable(),
-  age: z.number().optional(),
-  isSubscribed: z.boolean(),
-  credits: z.number(),
-});
-
-// Define the input schema for the main flow
-const BodyAssessmentInputSchema = z.object({
-  clientDialogue: z.string().describe("The user's question or statement."),
-  userProfile: ProfileSchema.describe("The user's profile data."),
-});
-export type BodyAssessmentInput = z.infer<typeof BodyAssessmentInputSchema>;
-
-// Define the output schema for the main flow
-const BodyAssessmentOutputSchema = z.object({
-  agentDialogue: z.string().optional().describe("Sally's textual response to the user."),
-  error: z.string().optional().describe("An error message if the process failed (e.g., 'subscription_required', 'insufficient_credits')."),
-});
-export type BodyAssessmentOutput = z.infer<typeof BodyAssessmentOutputSchema>;
 
 const prompt = ai.definePrompt(
   {
@@ -67,41 +41,48 @@ export async function getBodyAssessment(input: BodyAssessmentInput): Promise<Bod
     return { error: 'unauthorized' };
   }
 
-  // Manually call the verification tool first, as the LLM might not always do it.
-  const access = await verifyAccessTool({ authToken });
+  const flow = ai.defineFlow(
+    {
+      name: 'bodyAssessmentFlow',
+      inputSchema: BodyAssessmentInputSchema,
+      outputSchema: BodyAssessmentOutputSchema,
+    },
+    async (flowInput) => {
+      // Manually call the verification tool first for reliability.
+      const access = await verifyAccessTool({ authToken });
 
-  if (!access.canAccess) {
-    return { error: access.reason };
-  }
+      if (!access.canAccess) {
+        return { error: access.reason };
+      }
 
-  try {
-    const { output } = await prompt(input, {
-        tools: [
-            // Provide the tools with the necessary auth token
-            ai.tool(verifyAccessTool, async () => ({ authToken })),
-            ai.tool(deductCreditTool, async () => ({ authToken, creditsToDeduct: 1 }))
-        ]
-    });
+      try {
+        const { output } = await prompt(flowInput);
 
-    if (!output?.agentDialogue) {
-      // The model might have called the tools but not returned a final answer.
-      // This can happen if the prompt isn't perfect. We'll treat it as an error.
-      return { error: 'AI failed to generate a response after performing actions.' };
+        if (!output?.agentDialogue) {
+          return { error: 'AI failed to generate a response after performing actions.' };
+        }
+
+        // Manually deduct credit after successful response for reliability
+        const deduction = await deductCreditTool({ authToken, creditsToDeduct: 1 });
+        if (!deduction.success) {
+          console.warn("Failed to deduct credit after successful response:", deduction.message);
+        }
+        
+        return { agentDialogue: output.agentDialogue };
+
+      } catch (e: any) {
+        console.error("Error in getBodyAssessment flow:", e);
+        // Attempt to find specific tool-related errors from the LLM's response
+        if (e.message && e.message.includes('subscription_required')) {
+            return { error: 'subscription_required' };
+        }
+        if (e.message && e.message.includes('insufficient_credits')) {
+            return { error: 'insufficient_credits' };
+        }
+        return { error: e.message || "An unexpected error occurred." };
+      }
     }
+  );
 
-    // Even though the prompt instructs the model to deduct, we'll ensure it happens.
-    // Note: In a real-world scenario, you might want to check if the model *actually* called the tool.
-    // For simplicity here, we deduct it manually after a successful response.
-    const deduction = await deductCreditTool({ authToken, creditsToDeduct: 1 });
-    if (!deduction.success) {
-      console.warn("Failed to deduct credit after successful response:", deduction.message);
-      // Decide if this should be a user-facing error. For now, we'll let the response go through.
-    }
-    
-    return { agentDialogue: output.agentDialogue };
-
-  } catch (e: any) {
-    console.error("Error in getBodyAssessment flow:", e);
-    return { error: e.message || "An unexpected error occurred." };
-  }
+  return await flow(input);
 }

@@ -196,10 +196,8 @@ export const MealPlanView = () => {
         return;
     }
 
-    const token = localStorage.getItem('authToken');
-    if (!token || !profile || !scannedFood) {
-        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
-        router.push('/login');
+    if (!profile || !scannedFood) {
+        toast({ variant: 'destructive', title: 'Data not loaded', description: 'Please wait for your profile and meal data to load.' });
         setIsRecording(false);
         return;
     }
@@ -219,7 +217,9 @@ export const MealPlanView = () => {
         if (result.error) {
           if (result.error === 'subscription_required') {
             setSubscriptionModalOpen(true);
+            setSallyResponse("You need a subscription for this feature.");
           } else if (result.error === 'insufficient_credits') {
+            setSallyResponse("You're out of credits! Please buy more.");
             toast({
               variant: 'destructive',
               title: 'Out of Credits',
@@ -234,7 +234,7 @@ export const MealPlanView = () => {
           } else {
             throw new Error(result.error);
           }
-          return; // Stop execution
+          return; 
         }
         
         if (!result.agentDialogue) {
@@ -243,7 +243,7 @@ export const MealPlanView = () => {
 
         setSallyResponse(result.agentDialogue);
         await handlePlayAudio(result.agentDialogue);
-        await fetchProfile(); // Refresh profile to show updated credit count
+        await fetchProfile(); 
         
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
@@ -353,8 +353,7 @@ export const MealPlanView = () => {
         </div>
       </div>
       <audio ref={audioRef} className="hidden" onEnded={() => {
-        setIsAudioLoading(false)
-        setIsRecording(false)
+        setIsAudioLoading(false);
       }} />
     </div>
   );

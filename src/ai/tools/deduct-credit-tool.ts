@@ -7,12 +7,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
-export const DeductCreditInputSchema = z.object({
+const DeductCreditInputSchema = z.object({
   authToken: z.string().describe('The authorization token for the user.'),
   creditsToDeduct: z.number().describe('The number of credits to deduct.'),
 });
-
-export type DeductCreditInput = z.infer<typeof DeductCreditInputSchema>;
 
 export const deductCreditTool = ai.defineTool(
   {

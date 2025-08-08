@@ -166,16 +166,14 @@ export const SallyView = () => {
         return;
     }
 
-    const token = localStorage.getItem('authToken');
-    if (!token || !profile) {
-        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
-        router.push('/login');
+    if (!profile) {
+        toast({ variant: 'destructive', title: 'Profile not loaded', description: 'Please wait for your profile to load.' });
         setIsRecording(false);
         return;
     }
     
     setIsLoading(true);
-    setIsRecording(true); // Keep mic red during processing
+    setIsRecording(true); 
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
@@ -188,7 +186,9 @@ export const SallyView = () => {
         if (result.error) {
           if (result.error === 'subscription_required') {
             setSubscriptionModalOpen(true);
+            setSallyResponse("You need a subscription for this feature.");
           } else if (result.error === 'insufficient_credits') {
+            setSallyResponse("You're out of credits! Please buy more.");
             toast({
               variant: 'destructive',
               title: 'Out of Credits',
@@ -203,7 +203,7 @@ export const SallyView = () => {
           } else {
             throw new Error(result.error);
           }
-          return; // Stop execution
+          return; 
         }
         
         if (!result.agentDialogue) {
@@ -212,7 +212,7 @@ export const SallyView = () => {
 
         setSallyResponse(result.agentDialogue);
         await handlePlayAudio(result.agentDialogue);
-        await fetchProfile(); // Refresh profile to show updated credit count
+        await fetchProfile(); 
 
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
@@ -297,7 +297,6 @@ export const SallyView = () => {
       </div>
        <audio ref={audioRef} className="hidden" onEnded={() => {
         setIsAudioLoading(false);
-        setIsRecording(false);
        }} />
     </div>
   );

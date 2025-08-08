@@ -7,11 +7,9 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
-export const VerifyAccessInputSchema = z.object({
+const VerifyAccessInputSchema = z.object({
   authToken: z.string().describe('The authorization token for the user.'),
 });
-
-export type VerifyAccessInput = z.infer<typeof VerifyAccessInputSchema>;
 
 export const verifyAccessTool = ai.defineTool(
   {
