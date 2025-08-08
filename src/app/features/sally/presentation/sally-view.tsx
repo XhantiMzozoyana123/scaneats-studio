@@ -131,14 +131,12 @@ export const SallyView = () => {
   const handlePlayAudio = async (textToSpeak: string) => {
     if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
-    const token = localStorage.getItem('authToken');
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/TTS/speak`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ Text: textToSpeak }),
       });
@@ -155,10 +153,15 @@ export const SallyView = () => {
         audio.src = audioUrl;
         await new Promise<void>((resolve, reject) => {
           audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
-          audio.onended = () => resolve();
-          audio.onerror = (e) => reject(e);
+          audio.onended = () => {
+             URL.revokeObjectURL(audioUrl);
+             resolve();
+          };
+          audio.onerror = (e) => {
+             URL.revokeObjectURL(audioUrl);
+             reject(e);
+          };
         });
-        URL.revokeObjectURL(audioUrl);
       } else {
          throw new Error('Audio element not found.');
       }
