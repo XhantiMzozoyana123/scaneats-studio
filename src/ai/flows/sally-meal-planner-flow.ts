@@ -9,10 +9,12 @@ import { z } from 'zod';
 import { verifyAccessTool } from '@/ai/tools/verify-access-tool';
 import { deductCreditTool } from '@/ai/tools/deduct-credit-tool';
 import { MealPlannerInputSchema, MealPlannerOutputSchema, type MealPlannerInput, type MealPlannerOutput } from '../schemas';
+import { googleAI } from '@genkit-ai/googleai';
 
 const prompt = ai.definePrompt(
   {
     name: 'sallyMealPlannerPrompt',
+    model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: MealPlannerInputSchema },
     output: { schema: z.object({ agentDialogue: z.string() }) },
     prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist.

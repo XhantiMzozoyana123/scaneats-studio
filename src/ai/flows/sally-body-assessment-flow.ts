@@ -9,11 +9,13 @@ import { z } from 'zod';
 import { verifyAccessTool } from '@/ai/tools/verify-access-tool';
 import { deductCreditTool } from '@/ai/tools/deduct-credit-tool';
 import { BodyAssessmentInputSchema, BodyAssessmentOutputSchema, type BodyAssessmentInput, type BodyAssessmentOutput } from '../schemas';
+import { googleAI } from '@genkit-ai/googleai';
 
 
 const prompt = ai.definePrompt(
   {
     name: 'sallyBodyAssessmentPrompt',
+    model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: BodyAssessmentInputSchema },
     output: { schema: z.object({ agentDialogue: z.string() }) },
     prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist and health assistant.
