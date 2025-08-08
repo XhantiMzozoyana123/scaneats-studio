@@ -33,39 +33,39 @@ User's Question:
   }
 );
 
-export async function getMealPlanInsight(input: MealPlannerInput): Promise<MealPlannerOutput> {
-  const flow = ai.defineFlow({
-      name: 'mealPlanInsightFlow',
-      inputSchema: MealPlannerInputSchema,
-      outputSchema: MealPlannerOutputSchema,
-  }, async (flowInput) => {
-    // Manually call the verification tool first for reliability
-    const access = await verifyAccessTool({ authToken: flowInput.authToken });
+const mealPlanInsightFlow = ai.defineFlow({
+    name: 'mealPlanInsightFlow',
+    inputSchema: MealPlannerInputSchema,
+    outputSchema: MealPlannerOutputSchema,
+}, async (flowInput) => {
+  // Manually call the verification tool first for reliability
+  const access = await verifyAccessTool({ authToken: flowInput.authToken });
 
-    if (!access.canAccess) {
-      return { error: access.reason };
+  if (!access.canAccess) {
+    return { error: access.reason };
+  }
+  
+  try {
+    const { output } = await prompt(flowInput);
+
+    if (!output?.agentDialogue) {
+      return { error: 'AI failed to generate a response.' };
+    }
+
+    // Manually deduct credit after successful response for reliability
+    const deduction = await deductCreditTool({ authToken: flowInput.authToken, creditsToDeduct: 1 });
+    if (!deduction.success) {
+      console.warn("Failed to deduct credit after successful response:", deduction.message);
     }
     
-    try {
-      const { output } = await prompt(flowInput);
+    return { agentDialogue: output.agentDialogue };
 
-      if (!output?.agentDialogue) {
-        return { error: 'AI failed to generate a response.' };
-      }
+  } catch (e: any) {
+    console.error("Error in getMealPlanInsight flow:", e);
+    return { error: e.message || "An unexpected error occurred." };
+  }
+});
 
-      // Manually deduct credit after successful response for reliability
-      const deduction = await deductCreditTool({ authToken: flowInput.authToken, creditsToDeduct: 1 });
-      if (!deduction.success) {
-        console.warn("Failed to deduct credit after successful response:", deduction.message);
-      }
-      
-      return { agentDialogue: output.agentDialogue };
-
-    } catch (e: any) {
-      console.error("Error in getMealPlanInsight flow:", e);
-      return { error: e.message || "An unexpected error occurred." };
-    }
-  });
-
-  return await flow(input);
+export async function getMealPlanInsight(input: MealPlannerInput): Promise<MealPlannerOutput> {
+  return await mealPlanInsightFlow(input);
 }
