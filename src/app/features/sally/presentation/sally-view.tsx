@@ -101,7 +101,7 @@ export const SallyView = () => {
       };
       
       recognitionRef.current.onend = () => {
-        setIsRecording(false);
+        // This is handled by other state changes to prevent race conditions.
       };
 
     } else {
@@ -141,22 +141,29 @@ export const SallyView = () => {
   const handlePlayAudio = async (textToSpeak: string) => {
     if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
+
     try {
-      const { media: audioDataUri } = await textToSpeech(textToSpeak);
-      if (audioDataUri && audioRef.current) {
-          audioRef.current.src = audioDataUri;
-          await audioRef.current.play();
-      } else {
-        throw new Error('Audio data was not received from the text-to-speech service.');
-      }
+        const { media: audioDataUri } = await textToSpeech(textToSpeak);
+        const audio = audioRef.current;
+
+        if (audioDataUri && audio) {
+            audio.src = audioDataUri;
+            await new Promise((resolve, reject) => {
+                audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
+                audio.onended = resolve;
+                audio.onerror = reject;
+            });
+        } else {
+            throw new Error('Audio data was not received from the text-to-speech service.');
+        }
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Audio Error',
-        description: error.message || 'Could not play audio response.',
-      });
+        toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: error.message || 'Could not play audio response.',
+        });
     } finally {
-      setIsAudioLoading(false);
+        setIsAudioLoading(false);
     }
   };
 
@@ -308,9 +315,7 @@ export const SallyView = () => {
            )}
         </div>
       </div>
-       <audio ref={audioRef} className="hidden" onEnded={() => {
-        setIsAudioLoading(false);
-       }} />
+       <audio ref={audioRef} className="hidden" />
     </div>
   );
 };
