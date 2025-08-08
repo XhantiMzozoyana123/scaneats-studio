@@ -201,6 +201,13 @@ export const MealPlanView = () => {
         setIsRecording(false);
         return;
     }
+
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'Please log in again.' });
+      setIsRecording(false);
+      return;
+    }
     
     setIsSallyLoading(true);
     setIsRecording(true);
@@ -211,7 +218,8 @@ export const MealPlanView = () => {
         const result = await getMealPlanInsight({
             clientDialogue: userInput,
             userProfile: profile,
-            lastScannedFood: scannedFood
+            lastScannedFood: scannedFood,
+            authToken: authToken,
         });
         
         if (result.error) {
@@ -359,6 +367,7 @@ export const MealPlanView = () => {
       </div>
       <audio ref={audioRef} className="hidden" onEnded={() => {
         setIsAudioLoading(false);
+        setIsRecording(false);
       }} />
     </div>
   );

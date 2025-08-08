@@ -37,18 +37,13 @@ User's Question:
 );
 
 export async function getMealPlanInsight(input: MealPlannerInput): Promise<MealPlannerOutput> {
-  const authToken = localStorage.getItem('authToken');
-  if (!authToken) {
-    return { error: 'unauthorized' };
-  }
-
   const flow = ai.defineFlow({
       name: 'mealPlanInsightFlow',
       inputSchema: MealPlannerInputSchema,
       outputSchema: MealPlannerOutputSchema,
   }, async (flowInput) => {
     // Manually call the verification tool first for reliability
-    const access = await verifyAccessTool({ authToken });
+    const access = await verifyAccessTool({ authToken: flowInput.authToken });
 
     if (!access.canAccess) {
       return { error: access.reason };
@@ -62,7 +57,7 @@ export async function getMealPlanInsight(input: MealPlannerInput): Promise<MealP
       }
 
       // Manually deduct credit after successful response for reliability
-      const deduction = await deductCreditTool({ authToken, creditsToDeduct: 1 });
+      const deduction = await deductCreditTool({ authToken: flowInput.authToken, creditsToDeduct: 1 });
       if (!deduction.success) {
         console.warn("Failed to deduct credit after successful response:", deduction.message);
       }

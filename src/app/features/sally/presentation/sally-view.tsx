@@ -70,7 +70,6 @@ export const SallyView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
       };
@@ -102,7 +101,7 @@ export const SallyView = () => {
       };
       
       recognitionRef.current.onend = () => {
-        // State is handled by other functions to prevent race conditions.
+        setIsRecording(false);
       };
 
     } else {
@@ -151,7 +150,7 @@ export const SallyView = () => {
         throw new Error('Audio data was not received from the text-to-speech service.');
       }
     } catch (error: any) {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Audio Error',
         description: error.message || 'Could not play audio response.',
@@ -172,6 +171,13 @@ export const SallyView = () => {
         setIsRecording(false);
         return;
     }
+
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'Please log in again.' });
+      setIsRecording(false);
+      return;
+    }
     
     setIsLoading(true);
     setIsRecording(true); 
@@ -182,6 +188,7 @@ export const SallyView = () => {
         const result = await getBodyAssessment({
           clientDialogue: userInput,
           userProfile: profile,
+          authToken: authToken,
         });
 
         if (result.error) {

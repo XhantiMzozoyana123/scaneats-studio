@@ -27,6 +27,7 @@ const ProfileSchema = z.object({
 export const BodyAssessmentInputSchema = z.object({
   clientDialogue: z.string().describe("The user's question or statement."),
   userProfile: ProfileSchema.describe("The user's profile data."),
+  authToken: z.string().describe('The authorization token for the user.'),
 });
 export type BodyAssessmentInput = z.infer<typeof BodyAssessmentInputSchema>;
 
@@ -52,6 +53,7 @@ export const MealPlannerInputSchema = z.object({
   clientDialogue: z.string().describe("The user's question or statement about their meal."),
   userProfile: ProfileSchema.describe("The user's profile data."),
   lastScannedFood: ScannedFoodSchema.describe("The details of the last food item the user scanned."),
+  authToken: z.string().describe('The authorization token for the user.'),
 });
 export type MealPlannerInput = z.infer<typeof MealPlannerInputSchema>;
 
