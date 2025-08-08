@@ -72,8 +72,8 @@ export const SallyView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
         recognitionRef.current?.stop();
+        const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
       };
 
@@ -169,16 +169,9 @@ export const SallyView = () => {
         setIsRecording(false);
         return;
     }
-
-    if (!profile?.name) {
-      toast({ 
-          variant: 'destructive',
-          title: 'Profile Incomplete',
-          description: 'Please set your name in the profile before talking to Sally.'
-       });
-       setIsRecording(false);
-      return;
-    }
+    
+    // This client-side check is removed as requested.
+    // The backend should handle profile validation.
 
     setIsLoading(true);
     setLoadingProgress(10);
@@ -192,7 +185,7 @@ export const SallyView = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            ClientName: profile.name,
+            ClientName: profile?.name || '',
             ClientDialogue: userInput,
           }),
         });

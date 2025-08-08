@@ -101,8 +101,8 @@ export const MealPlanView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
         recognitionRef.current?.stop();
+        const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
       };
 
@@ -199,15 +199,8 @@ export const MealPlanView = () => {
         return;
     }
     
-    if (!profile?.name) {
-       toast({
-          variant: 'destructive',
-          title: 'Profile Incomplete',
-          description: 'Please complete your profile before talking to Sally.',
-       });
-       setIsRecording(false);
-       return;
-    }
+    // This client-side check is removed as requested.
+    // The backend should handle profile validation.
 
     setIsSallyLoading(true);
     setSallyProgress(10);
@@ -221,7 +214,7 @@ export const MealPlanView = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            ClientName: profile.name,
+            ClientName: profile?.name || '',
             ClientDialogue: userInput,
           }),
         });
