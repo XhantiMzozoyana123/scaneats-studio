@@ -65,6 +65,14 @@ export const SallyView = () => {
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
+        // "no-speech" is a common event when the user doesn't say anything.
+        // We don't want to show a scary error for that.
+        if (event.error === 'no-speech') {
+          setIsRecording(false);
+          setIsLoading(false);
+          return;
+        }
+
         if (event.error === 'network') {
           toast({
             variant: 'destructive',
@@ -141,7 +149,7 @@ export const SallyView = () => {
         body: JSON.stringify({
           Text: textToSpeak,
           LanguageCode: 'en-US',
-          Gender: 'Female', // Can be 'Male', 'Female', or 'Neutral'
+          Gender: 2, // 2 corresponds to SsmlVoiceGender.Female
         }),
       });
 
@@ -161,7 +169,15 @@ export const SallyView = () => {
       await new Promise<void>((resolve, reject) => {
         if (audio) {
           audio.src = audioUrl;
-          audio.oncanplaythrough = () => audio.play().catch(reject);
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+             playPromise.then(() => {
+                // Autoplay started
+             }).catch(error => {
+                console.error("Audio playback error", error);
+                reject(error);
+             });
+          }
           audio.onended = () => {
              URL.revokeObjectURL(audioUrl);
              resolve();
