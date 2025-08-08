@@ -211,6 +211,9 @@ export const MealPlanView = () => {
                 reject(error);
              });
           }
+          audio.oncanplaythrough = () => {
+             // Audio is ready to play
+          };
           audio.onended = () => {
             URL.revokeObjectURL(audioUrl);
             resolve();
@@ -240,12 +243,12 @@ export const MealPlanView = () => {
       return;
     }
 
-    if (!profile || !scannedFood) {
+    if (!profile) {
       toast({
         variant: 'destructive',
         title: 'Data not loaded',
         description:
-          'Please wait for your profile and meal data to load.',
+          'Please wait for your profile data to load.',
       });
       setIsRecording(false);
       return;

@@ -174,6 +174,9 @@ export const SallyView = () => {
                 reject(error);
              });
           }
+          audio.oncanplaythrough = () => {
+            // Audio is ready to play
+          };
           audio.onended = () => {
              URL.revokeObjectURL(audioUrl);
              resolve();
