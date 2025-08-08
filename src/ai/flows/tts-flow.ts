@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
+import wav from 'wav';
 
 const TTSInputSchema = z.string();
 const TTSOutputSchema = z.object({
@@ -17,6 +18,34 @@ const TTSOutputSchema = z.object({
 
 export async function textToSpeech(input: string): Promise<z.infer<typeof TTSOutputSchema>> {
   return ttsFlow(input);
+}
+
+// Helper function to convert raw PCM audio data to WAV format
+async function toWav(
+  pcmData: Buffer,
+  channels = 1,
+  rate = 24000,
+  sampleWidth = 2
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const writer = new wav.Writer({
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
+    });
+
+    const bufs: any[] = [];
+    writer.on('error', reject);
+    writer.on('data', function (d) {
+      bufs.push(d);
+    });
+    writer.on('end', function () {
+      resolve(Buffer.concat(bufs).toString('base64'));
+    });
+
+    writer.write(pcmData);
+    writer.end();
+  });
 }
 
 const ttsFlow = ai.defineFlow(
@@ -44,18 +73,16 @@ const ttsFlow = ai.defineFlow(
     }
     
     // The model returns a data URI with base64 encoded PCM data.
-    // The browser can often play this directly, but converting to WAV is more robust.
-    // However, the previous implementation was flawed. Let's return the direct URI
-    // and let the browser handle it. Most modern browsers support this.
-    // The format is typically 'data:audio/L16;rate=24000;channels=1;base64,...' which might not be universally supported.
-    // A more robust solution would be to convert to WAV on the server.
-    // For now, let's assume direct playback is possible as the previous WAV conversion was faulty.
-    // If issues persist, a proper WAV conversion library will be needed.
-    // The gemini model returns PCM audio, which needs to be wrapped in a WAV container.
-    // The previous `wav` implementation was causing issues.
-    // Let's directly return what the model gives us. It should be a data URI.
+    // We must convert this raw PCM data into a proper WAV file for browser playback.
+    const audioBuffer = Buffer.from(
+      media.url.substring(media.url.indexOf(',') + 1),
+      'base64'
+    );
+    
+    const wavBase64 = await toWav(audioBuffer);
+
     return {
-      media: media.url,
+      media: 'data:audio/wav;base64,' + wavBase64,
     };
   }
 );
