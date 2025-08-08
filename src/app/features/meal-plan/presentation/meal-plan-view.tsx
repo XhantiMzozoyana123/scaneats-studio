@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { Loader2, Info, Mic, PlayCircle, CircleDollarSign } from 'lucide-react';
+import { Loader2, Info, Mic, CircleDollarSign } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
 import type { ScannedFood } from '@/app/domain/scanned-food';
@@ -13,22 +13,20 @@ import Image from 'next/image';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { API_BASE_URL } from '@/app/shared/lib/api';
 import { cn } from '@/app/shared/lib/utils';
-
+import { getMealPlanInsight } from '@/ai/flows/sally-meal-planner-flow';
 
 const mealRepository = new MealApiRepository();
 const mealService = new MealService(mealRepository);
 
 export const MealPlanView = () => {
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen } = useUserData();
+  const { profile, setSubscriptionModalOpen, fetchProfile } = useUserData();
   const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isMealLoading, setIsMealLoading] = useState(true);
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -80,9 +78,9 @@ export const MealPlanView = () => {
     if (isSallyLoading) {
       const interval = setInterval(() => {
         setSallyProgress((prev) => {
-          if (prev >= 90) {
+          if (prev >= 95) {
             clearInterval(interval);
-            return 90;
+            return 95;
           }
           return prev + 10;
         });
@@ -108,7 +106,13 @@ export const MealPlanView = () => {
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-        if (event.error === 'not-allowed') {
+        if (event.error === 'network') {
+          toast({
+            variant: 'destructive',
+            title: 'Speech Error',
+            description: 'Could not recognize speech: network error. Please check your connection.',
+          });
+        } else if (event.error === 'not-allowed') {
           toast({
             variant: 'destructive',
             title: 'Microphone Access Denied',
@@ -122,8 +126,8 @@ export const MealPlanView = () => {
             description: `Could not recognize speech: ${event.error}. Please try again.`,
           });
         }
-        setIsRecording(false);
         setIsSallyLoading(false);
+        setIsRecording(false);
       };
 
       recognitionRef.current.onend = () => {
@@ -147,7 +151,6 @@ export const MealPlanView = () => {
 
     if (isSallyLoading) return;
     setSallyResponse(null);
-    setCanPlayAudio(false);
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -166,19 +169,21 @@ export const MealPlanView = () => {
   };
 
   const handlePlayAudio = async (textToSpeak: string) => {
-    if (!textToSpeak || isAudioLoading) return;
+    if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
     try {
       const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
           await audioRef.current.play();
+      } else {
+         throw new Error('Audio data was not received from the text-to-speech service.');
       }
-    } catch (error) {
+    } catch (error: any) {
        toast({
         variant: 'destructive',
         title: 'Audio Error',
-        description: 'Could not play audio response.',
+        description: error.message || 'Could not play audio response.',
       });
     } finally {
       setIsAudioLoading(false);
@@ -192,7 +197,7 @@ export const MealPlanView = () => {
     }
 
     const token = localStorage.getItem('authToken');
-    if (!token) {
+    if (!token || !profile || !scannedFood) {
         toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
         router.push('/login');
         setIsRecording(false);
@@ -200,35 +205,22 @@ export const MealPlanView = () => {
     }
     
     setIsSallyLoading(true);
+    setIsRecording(true);
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ClientName: profile?.name || '',
-            ClientDialogue: userInput,
-          }),
+        const result = await getMealPlanInsight({
+            clientDialogue: userInput,
+            userProfile: profile,
+            lastScannedFood: scannedFood
         });
         
-        if (response.status === 401) {
-            toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
-            router.push('/login');
-            throw new Error('Unauthorized');
-        }
-
-        if (response.status === 403) {
+        if (result.error) {
+          if (result.error === 'subscription_required') {
             setSubscriptionModalOpen(true);
-            throw new Error('Subscription required');
-        }
-        
-        if (response.status === 429) {
-          toast({
+          } else if (result.error === 'insufficient_credits') {
+            toast({
               variant: 'destructive',
               title: 'Out of Credits',
               description: 'You have used all your credits. Please buy more to continue talking to Sally.',
@@ -238,53 +230,37 @@ export const MealPlanView = () => {
                   Buy Credits
                 </Button>
               )
-          });
-          throw new Error('Out of credits');
+            });
+          } else {
+            throw new Error(result.error);
+          }
+          return; // Stop execution
         }
         
-        if (!response.ok) {
-            let errorMsg = "Sally failed to respond";
-            try {
-                const errorData = await response.json();
-                errorMsg = errorData.message || errorData.error || errorMsg;
-            } catch {}
-            throw new Error(errorMsg);
+        if (!result.agentDialogue) {
+          throw new Error("Sally didn't provide a response.");
         }
 
-        const result = await response.json();
-        const agentDialogue = result.agentDialogue;
-        setSallyResponse(agentDialogue);
-        await handlePlayAudio(agentDialogue);
+        setSallyResponse(result.agentDialogue);
+        await handlePlayAudio(result.agentDialogue);
+        await fetchProfile(); // Refresh profile to show updated credit count
         
     } catch (error: any) {
-      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
-        setSallyResponse('Sorry, I had trouble with that. Please try again.');
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message || 'An error occurred while talking to Sally.',
-        });
-      }
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'An error occurred while talking to Sally.',
+      });
     } finally {
       setSallyProgress(100);
-      setTimeout(() => setIsSallyLoading(false), 500);
-      setIsRecording(false);
+      setTimeout(() => {
+        setIsSallyLoading(false);
+        setIsRecording(false);
+      }, 500);
     }
   };
   
-  const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
-    if (!scannedFood) {
-      return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
-    }
-    return {
-      totalCalories: scannedFood.total || 0,
-      totalProtein: scannedFood.protein || 0,
-      totalCarbs: scannedFood.carbs || 0,
-      totalFat: scannedFood.fat || 0,
-    };
-  }, [scannedFood]);
-
-
   if (isMealLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
@@ -376,7 +352,10 @@ export const MealPlanView = () => {
             )}
         </div>
       </div>
-      <audio ref={audioRef} className="hidden" onEnded={() => setIsAudioLoading(false)} />
+      <audio ref={audioRef} className="hidden" onEnded={() => {
+        setIsAudioLoading(false)
+        setIsRecording(false)
+      }} />
     </div>
   );
 };

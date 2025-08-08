@@ -13,16 +13,14 @@ import { Progress } from '@/components/ui/progress';
 import {
   Loader2,
   Mic,
-  PlayCircle,
   CircleDollarSign,
 } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
-import { API_BASE_URL } from '@/app/shared/lib/api';
 import { textToSpeech } from '@/ai/flows/tts-flow';
-
+import { getBodyAssessment } from '@/ai/flows/sally-body-assessment-flow';
 
 declare global {
   interface Window {
@@ -39,20 +37,19 @@ export const SallyView = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen } = useUserData();
+  const { profile, setSubscriptionModalOpen, fetchProfile } = useUserData();
   
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
         setLoadingProgress((prev) => {
-          if (prev >= 90) {
+          if (prev >= 95) {
             clearInterval(interval);
-            return 90;
+            return 95;
           }
           return prev + 10;
         });
@@ -79,7 +76,13 @@ export const SallyView = () => {
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-        if (event.error === 'not-allowed') {
+         if (event.error === 'network') {
+           toast({
+             variant: 'destructive',
+             title: 'Speech Error',
+             description: 'Could not recognize speech: network error. Please check your connection.',
+           });
+        } else if (event.error === 'not-allowed') {
            toast({
             variant: 'destructive',
             title: 'Microphone Access Denied',
@@ -93,8 +96,8 @@ export const SallyView = () => {
             description: `Could not recognize speech: ${event.error}. Please try again.`,
           });
         }
-        setIsRecording(false);
         setIsLoading(false);
+        setIsRecording(false);
       };
       
       recognitionRef.current.onend = () => {
@@ -119,7 +122,6 @@ export const SallyView = () => {
     if (isLoading) return;
 
     setSallyResponse('');
-    setCanPlayAudio(false);
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -144,12 +146,14 @@ export const SallyView = () => {
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
           await audioRef.current.play();
+      } else {
+        throw new Error('Audio data was not received from the text-to-speech service.');
       }
-    } catch (error) {
+    } catch (error: any) {
        toast({
         variant: 'destructive',
         title: 'Audio Error',
-        description: 'Could not play audio response.',
+        description: error.message || 'Could not play audio response.',
       });
     } finally {
       setIsAudioLoading(false);
@@ -163,7 +167,7 @@ export const SallyView = () => {
     }
 
     const token = localStorage.getItem('authToken');
-    if (!token) {
+    if (!token || !profile) {
         toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
         router.push('/login');
         setIsRecording(false);
@@ -171,35 +175,21 @@ export const SallyView = () => {
     }
     
     setIsLoading(true);
+    setIsRecording(true); // Keep mic red during processing
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ClientName: profile?.name || '',
-            ClientDialogue: userInput,
-          }),
+        const result = await getBodyAssessment({
+          clientDialogue: userInput,
+          userProfile: profile,
         });
-        
-        if (response.status === 401) {
-            toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
-            router.push('/login');
-            throw new Error('Unauthorized');
-        }
 
-        if (response.status === 403) {
+        if (result.error) {
+          if (result.error === 'subscription_required') {
             setSubscriptionModalOpen(true);
-            throw new Error('Subscription required');
-        }
-        
-        if (response.status === 429) {
-          toast({
+          } else if (result.error === 'insufficient_credits') {
+            toast({
               variant: 'destructive',
               title: 'Out of Credits',
               description: 'You have used all your credits. Please buy more to continue talking to Sally.',
@@ -209,37 +199,34 @@ export const SallyView = () => {
                   Buy Credits
                 </Button>
               )
-          });
-          throw new Error('Out of credits');
+            });
+          } else {
+            throw new Error(result.error);
+          }
+          return; // Stop execution
+        }
+        
+        if (!result.agentDialogue) {
+          throw new Error("Sally didn't provide a response.");
         }
 
-        if (!response.ok) {
-            let errorMsg = "Sally failed to respond";
-            try {
-                const errorData = await response.json();
-                errorMsg = errorData.message || errorData.error || errorMsg;
-            } catch {}
-            throw new Error(errorMsg);
-        }
-
-        const result = await response.json();
-        const agentDialogue = result.agentDialogue;
-        setSallyResponse(agentDialogue);
-        await handlePlayAudio(agentDialogue);
+        setSallyResponse(result.agentDialogue);
+        await handlePlayAudio(result.agentDialogue);
+        await fetchProfile(); // Refresh profile to show updated credit count
 
     } catch (error: any) {
-      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized'  && error.message !== 'Out of credits') {
-        setSallyResponse('Sorry, I had trouble with that. Please try again.');
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message || 'An error occurred while talking to Sally.',
-        });
-      }
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'An error occurred while talking to Sally.',
+      });
     } finally {
       setLoadingProgress(100);
-      setTimeout(() => setIsLoading(false), 500);
-      setIsRecording(false);
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsRecording(false);
+      }, 500);
     }
   };
 
@@ -256,7 +243,7 @@ export const SallyView = () => {
             }}
           />
 
-          {isRecording && (
+          {isRecording && !isLoading && (
             <div className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
               <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
               <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
@@ -269,11 +256,12 @@ export const SallyView = () => {
             onClick={handleMicClick}
             disabled={isLoading}
             className={cn(
-              'relative z-10 flex h-20 w-20 items-center justify-center rounded-full shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
-              isRecording 
-                ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' 
-                : 'bg-gradient-to-r from-[#4a148c] to-[#311b92] active:bg-[#3c239a]',
-              isLoading && 'cursor-not-allowed'
+              'relative z-10 flex h-20 w-20 items-center justify-center rounded-full transition-all active:scale-95',
+              isRecording
+                ? 'bg-red-600 hover:bg-red-700 active:bg-red-800'
+                : 'bg-gradient-to-r from-[#4a148c] to-[#311b92] hover:from-[#5f1ca7] hover:to-[#4024b3]',
+              isLoading && 'cursor-not-allowed',
+              'shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)]'
             )}
             aria-label="Activate Voice AI"
           >
@@ -303,26 +291,14 @@ export const SallyView = () => {
                     <strong>Sally</strong>
                     <span className="text-gray-600"> - {sallyResponse}</span>
                 </div>
-                {canPlayAudio && sallyResponse && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handlePlayAudio(sallyResponse)}
-                    disabled={isAudioLoading}
-                    className="h-8 w-8 flex-shrink-0"
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <PlayCircle className="h-5 w-5" />
-                    )}
-                  </Button>
-                )}
             </div>
            )}
         </div>
       </div>
-       <audio ref={audioRef} className="hidden" onEnded={() => setIsAudioLoading(false)} />
+       <audio ref={audioRef} className="hidden" onEnded={() => {
+        setIsAudioLoading(false);
+        setIsRecording(false);
+       }} />
     </div>
   );
 };
