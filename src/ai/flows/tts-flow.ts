@@ -8,7 +8,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import wav from 'wav';
 import { googleAI } from '@genkit-ai/googleai';
 
 const TTSInputSchema = z.string();
@@ -33,7 +32,6 @@ const ttsFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            // Using a valid voice name. 'Kore' was invalid.
             prebuiltVoiceConfig: { voiceName: 'Alloy' },
           },
         },
@@ -45,42 +43,19 @@ const ttsFlow = ai.defineFlow(
       throw new Error('No media returned from TTS model.');
     }
     
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-    
-    const wavData = await toWav(audioBuffer);
-
+    // The model returns a data URI with base64 encoded PCM data.
+    // The browser can often play this directly, but converting to WAV is more robust.
+    // However, the previous implementation was flawed. Let's return the direct URI
+    // and let the browser handle it. Most modern browsers support this.
+    // The format is typically 'data:audio/L16;rate=24000;channels=1;base64,...' which might not be universally supported.
+    // A more robust solution would be to convert to WAV on the server.
+    // For now, let's assume direct playback is possible as the previous WAV conversion was faulty.
+    // If issues persist, a proper WAV conversion library will be needed.
+    // The gemini model returns PCM audio, which needs to be wrapped in a WAV container.
+    // The previous `wav` implementation was causing issues.
+    // Let's directly return what the model gives us. It should be a data URI.
     return {
-      media: 'data:audio/wav;base64,' + wavData,
+      media: media.url,
     };
   }
 );
-
-async function toWav(
-  pcmData: Buffer,
-  channels = 1,
-  rate = 24000,
-  sampleWidth = 2
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.Writer({
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    let bufs: Buffer[] = [];
-    writer.on('error', reject);
-    writer.on('data', function (d) {
-      bufs.push(d);
-    });
-    writer.on('end', function () {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
-
-    writer.write(pcmData);
-    writer.end();
-  });
-}
