@@ -360,7 +360,7 @@ export const MealPlanView = () => {
           </div>
         </div>
 
-        <button onClick={handleMicClick} className={cn("flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0", isRecording && 'bg-gradient-to-r from-red-600 to-red-800')}>
+        <button onClick={handleMicClick} className={cn("flex flex-col justify-center items-center text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0", isRecording ? 'bg-red-600' : 'bg-gradient-to-r from-[#4a148c] to-[#311b92]')}>
            <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
         </button>
         
