@@ -72,8 +72,8 @@ export const SallyView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
+        recognitionRef.current?.stop();
         handleApiCall(transcript);
       };
 
@@ -96,10 +96,11 @@ export const SallyView = () => {
         setIsRecording(false);
         setIsLoading(false);
       };
-
+      
       recognitionRef.current.onend = () => {
-        // This is handled by other state changes, so we don't set isRecording to false here.
+        // State is handled by other functions to prevent race conditions.
       };
+
     } else {
       toast({
         variant: 'destructive',

@@ -101,8 +101,8 @@ export const MealPlanView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
+        recognitionRef.current?.stop();
         handleApiCall(transcript);
       };
 
@@ -127,7 +127,7 @@ export const MealPlanView = () => {
       };
 
       recognitionRef.current.onend = () => {
-        // This is handled by other state changes
+        // State is handled by other functions to prevent race conditions.
       };
     } else {
       toast({
