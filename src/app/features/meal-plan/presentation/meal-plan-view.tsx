@@ -28,6 +28,7 @@ export const MealPlanView = () => {
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -100,7 +101,6 @@ export const MealPlanView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        setIsRecording(false);
         recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
@@ -123,10 +123,11 @@ export const MealPlanView = () => {
           });
         }
         setIsRecording(false);
+        setIsSallyLoading(false);
       };
 
       recognitionRef.current.onend = () => {
-        setIsRecording(false);
+        // This is handled by other state changes
       };
     } else {
       toast({
@@ -143,12 +144,12 @@ export const MealPlanView = () => {
       setIsRecording(false);
       return;
     }
+
+    if (isSallyLoading) return;
+    setSallyResponse(null);
+    setCanPlayAudio(false);
+
     try {
-      if (isSallyLoading) return;
-       if (audioRef.current) {
-        audioRef.current.muted = true;
-        await audioRef.current.play().catch(() => {});
-      }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
@@ -160,6 +161,7 @@ export const MealPlanView = () => {
         description:
           'Please allow microphone access in your browser settings to use this feature.',
       });
+      setIsRecording(false);
     }
   };
 
@@ -170,7 +172,6 @@ export const MealPlanView = () => {
       const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
-          audioRef.current.muted = false;
           await audioRef.current.play();
       }
     } catch (error) {
@@ -185,12 +186,16 @@ export const MealPlanView = () => {
   };
 
   const handleApiCall = async (userInput: string) => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim()) {
+        setIsRecording(false);
+        return;
+    }
 
     const token = localStorage.getItem('authToken');
     if (!token) {
         toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
         router.push('/login');
+        setIsRecording(false);
         return;
     }
     
@@ -200,6 +205,7 @@ export const MealPlanView = () => {
           title: 'Profile Incomplete',
           description: 'Please complete your profile before talking to Sally.',
        });
+       setIsRecording(false);
        return;
     }
 
@@ -258,7 +264,7 @@ export const MealPlanView = () => {
         const result = await response.json();
         const agentDialogue = result.agentDialogue;
         setSallyResponse(agentDialogue);
-        await handlePlayAudio(agentDialogue);
+        setCanPlayAudio(true);
         
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
@@ -272,6 +278,7 @@ export const MealPlanView = () => {
     } finally {
       setSallyProgress(100);
       setTimeout(() => setIsSallyLoading(false), 500);
+      setIsRecording(false);
     }
   };
   
@@ -360,7 +367,9 @@ export const MealPlanView = () => {
           </div>
         </div>
 
-        <button onClick={handleMicClick} className={cn("flex flex-col justify-center items-center text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0", isRecording ? 'bg-red-600' : 'bg-gradient-to-r from-[#4a148c] to-[#311b92]')}>
+        <button onClick={handleMicClick} className={cn("flex flex-col justify-center items-center text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0", 
+            isRecording ? 'bg-red-600' : 'bg-gradient-to-r from-[#4a148c] to-[#311b92]'
+        )}>
            <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
         </button>
         
@@ -373,6 +382,21 @@ export const MealPlanView = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="flex-grow">{sallyResponse || "Ask me about this meal and I'll tell you everything"}</span>
+                 {canPlayAudio && sallyResponse && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handlePlayAudio(sallyResponse)}
+                    disabled={isAudioLoading}
+                    className="h-8 w-8 flex-shrink-0 text-white"
+                  >
+                    {isAudioLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-5 w-5" />
+                    )}
+                  </Button>
+                )}
               </div>
             )}
         </div>

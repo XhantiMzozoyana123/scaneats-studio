@@ -38,6 +38,7 @@ export const SallyView = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [canPlayAudio, setCanPlayAudio] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -70,7 +71,6 @@ export const SallyView = () => {
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event: any) => {
-        setIsRecording(false);
         recognitionRef.current?.stop();
         const transcript = event.results[0][0].transcript;
         handleApiCall(transcript);
@@ -93,10 +93,11 @@ export const SallyView = () => {
           });
         }
         setIsRecording(false);
+        setIsLoading(false);
       };
 
       recognitionRef.current.onend = () => {
-        setIsRecording(false);
+        // This is handled by other state changes, so we don't set isRecording to false here.
       };
     } else {
       toast({
@@ -115,11 +116,10 @@ export const SallyView = () => {
     }
     if (isLoading) return;
 
+    setSallyResponse('');
+    setCanPlayAudio(false);
+
     try {
-      if (audioRef.current) {
-        audioRef.current.muted = true;
-        await audioRef.current.play().catch(() => {});
-      }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
@@ -130,6 +130,7 @@ export const SallyView = () => {
         title: 'Microphone Access Denied', 
         description: 'Please allow microphone access in your browser settings to use this feature.', 
       });
+      setIsRecording(false);
     }
   };
   
@@ -140,7 +141,6 @@ export const SallyView = () => {
       const { media: audioDataUri } = await textToSpeech(textToSpeak);
       if (audioDataUri && audioRef.current) {
           audioRef.current.src = audioDataUri;
-          audioRef.current.muted = false;
           await audioRef.current.play();
       }
     } catch (error) {
@@ -155,12 +155,16 @@ export const SallyView = () => {
   };
 
  const handleApiCall = async (userInput: string) => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim()) {
+        setIsRecording(false);
+        return;
+    }
 
     const token = localStorage.getItem('authToken');
     if (!token) {
         toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
         router.push('/login');
+        setIsRecording(false);
         return;
     }
 
@@ -170,6 +174,7 @@ export const SallyView = () => {
           title: 'Profile Incomplete',
           description: 'Please set your name in the profile before talking to Sally.'
        });
+       setIsRecording(false);
       return;
     }
 
@@ -213,7 +218,7 @@ export const SallyView = () => {
         const result = await response.json();
         const agentDialogue = result.agentDialogue;
         setSallyResponse(agentDialogue);
-        await handlePlayAudio(agentDialogue);
+        setCanPlayAudio(true);
 
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
@@ -227,6 +232,7 @@ export const SallyView = () => {
     } finally {
       setLoadingProgress(100);
       setTimeout(() => setIsLoading(false), 500);
+      setIsRecording(false);
     }
   };
 
@@ -290,6 +296,21 @@ export const SallyView = () => {
                     <strong>Sally</strong>
                     <span className="text-gray-600"> - {sallyResponse}</span>
                 </div>
+                {canPlayAudio && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handlePlayAudio(sallyResponse)}
+                    disabled={isAudioLoading}
+                    className="h-8 w-8 flex-shrink-0"
+                  >
+                    {isAudioLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-5 w-5" />
+                    )}
+                  </Button>
+                )}
             </div>
            )}
         </div>
