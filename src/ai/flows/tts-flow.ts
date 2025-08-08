@@ -33,7 +33,8 @@ const ttsFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
+            // Using a valid voice name. 'Kore' was invalid.
+            prebuiltVoiceConfig: { voiceName: 'Alloy' },
           },
         },
       },
