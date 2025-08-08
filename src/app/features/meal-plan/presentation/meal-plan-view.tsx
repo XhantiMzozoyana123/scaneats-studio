@@ -10,7 +10,6 @@ import type { ScannedFood } from '@/app/domain/scanned-food';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { textToSpeech } from '@/ai/flows/tts-flow';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/app/shared/lib/utils';
@@ -170,22 +169,36 @@ export const MealPlanView = () => {
   const handlePlayAudio = async (textToSpeak: string) => {
     if (!textToSpeak || isAudioLoading || !audioRef.current) return;
     setIsAudioLoading(true);
+    const token = localStorage.getItem('authToken');
 
     try {
-      const { media: audioDataUri } = await textToSpeech(textToSpeak);
-      const audio = audioRef.current;
+      const response = await fetch(`${API_BASE_URL}/api/TTS/speak`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ Text: textToSpeak }),
+      });
 
-      if (audioDataUri && audio) {
-        audio.src = audioDataUri;
-        await new Promise((resolve, reject) => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch audio from server.');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      const audio = audioRef.current;
+      if (audio) {
+        audio.src = audioUrl;
+        await new Promise<void>((resolve, reject) => {
           audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
-          audio.onended = resolve;
-          audio.onerror = reject;
+          audio.onended = () => resolve();
+          audio.onerror = (e) => reject(e);
         });
+        URL.revokeObjectURL(audioUrl);
       } else {
-        throw new Error(
-          'Audio data was not received from the text-to-speech service.'
-        );
+        throw new Error('Audio element not found.');
       }
     } catch (error: any) {
       toast({
