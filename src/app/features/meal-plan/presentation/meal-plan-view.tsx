@@ -182,6 +182,11 @@ export const MealPlanView = () => {
       if (!response.ok) {
         throw new Error('Failed to fetch audio from server.');
       }
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("audio")) {
+        throw new Error("Received invalid content type from audio server.");
+      }
 
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
