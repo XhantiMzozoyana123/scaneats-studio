@@ -171,12 +171,16 @@ export const MealPlanView = () => {
     setIsAudioLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/TTS/speak`, {
+      const response = await fetch(`${API_BASE_URL}/api/GoogleTTS/speak`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Text: textToSpeak }),
+        body: JSON.stringify({
+          Text: textToSpeak,
+          LanguageCode: 'en-US',
+          Gender: 'Female', // Can be 'Male', 'Female', or 'Neutral'
+        }),
       });
 
       if (!response.ok) {
@@ -192,10 +196,10 @@ export const MealPlanView = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
 
       const audio = audioRef.current;
-      if (audio) {
-        audio.src = audioUrl;
-        await new Promise<void>((resolve, reject) => {
-          audio.oncanplaythrough = () => audio.play().then(resolve).catch(reject);
+      await new Promise<void>((resolve, reject) => {
+        if (audio) {
+          audio.src = audioUrl;
+          audio.oncanplaythrough = () => audio.play().catch(reject);
           audio.onended = () => {
             URL.revokeObjectURL(audioUrl);
             resolve();
@@ -204,10 +208,10 @@ export const MealPlanView = () => {
             URL.revokeObjectURL(audioUrl);
             reject(e);
           };
-        });
-      } else {
-        throw new Error('Audio element not found.');
-      }
+        } else {
+          reject(new Error('Audio element not found.'));
+        }
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',
