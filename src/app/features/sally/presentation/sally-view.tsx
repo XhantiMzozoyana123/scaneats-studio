@@ -14,6 +14,7 @@ import {
   Loader2,
   Mic,
   PlayCircle,
+  CircleDollarSign,
 } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
@@ -206,6 +207,21 @@ export const SallyView = () => {
             throw new Error('Subscription required');
         }
         
+        if (response.status === 429) {
+          toast({
+              variant: 'destructive',
+              title: 'Out of Credits',
+              description: 'You have used all your credits. Please buy more to continue talking to Sally.',
+              action: (
+                <Button onClick={() => router.push('/credits')} className="gap-2">
+                  <CircleDollarSign />
+                  Buy Credits
+                </Button>
+              )
+          });
+          throw new Error('Out of credits');
+        }
+
         if (!response.ok) {
             let errorMsg = "Sally failed to respond";
             try {
@@ -221,7 +237,7 @@ export const SallyView = () => {
         setCanPlayAudio(true);
 
     } catch (error: any) {
-      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized'  && error.message !== 'Out of credits') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
         toast({
           variant: 'destructive',
@@ -265,7 +281,7 @@ export const SallyView = () => {
               'relative z-10 flex h-20 w-20 items-center justify-center rounded-full shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
               isRecording 
                 ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' 
-                : 'bg-[#4629B0] active:bg-[#3c239a]',
+                : 'bg-gradient-to-r from-[#4a148c] to-[#311b92] active:bg-[#3c239a]',
               isLoading && 'cursor-not-allowed'
             )}
             aria-label="Activate Voice AI"
@@ -296,7 +312,7 @@ export const SallyView = () => {
                     <strong>Sally</strong>
                     <span className="text-gray-600"> - {sallyResponse}</span>
                 </div>
-                {canPlayAudio && (
+                {canPlayAudio && sallyResponse && (
                   <Button
                     size="icon"
                     variant="ghost"
