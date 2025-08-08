@@ -103,8 +103,6 @@ export const MealPlanView = () => {
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-        // "no-speech" is a common event when the user doesn't say anything.
-        // We don't want to show a scary error for that.
         if (event.error === 'no-speech') {
           setIsRecording(false);
           setIsSallyLoading(false);
@@ -208,9 +206,7 @@ export const MealPlanView = () => {
           audio.src = audioUrl;
           const playPromise = audio.play();
           if (playPromise !== undefined) {
-             playPromise.then(() => {
-                // Autoplay started
-             }).catch(error => {
+             playPromise.catch(error => {
                 console.error("Audio playback error", error);
                 reject(error);
              });
@@ -321,7 +317,7 @@ export const MealPlanView = () => {
       if (!result.agentDialogue) {
         throw new Error("Sally didn't provide a response.");
       }
-
+      
       setSallyResponse(result.agentDialogue);
       await handlePlayAudio(result.agentDialogue);
       await fetchProfile(); // Refresh credits
