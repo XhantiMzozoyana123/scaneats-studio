@@ -170,9 +170,6 @@ export const SallyView = () => {
         return;
     }
     
-    // This client-side check is removed as requested.
-    // The backend should handle profile validation.
-
     setIsLoading(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
@@ -228,7 +225,7 @@ export const SallyView = () => {
         const result = await response.json();
         const agentDialogue = result.agentDialogue;
         setSallyResponse(agentDialogue);
-        setCanPlayAudio(true);
+        await handlePlayAudio(agentDialogue);
 
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized'  && error.message !== 'Out of credits') {
@@ -325,7 +322,7 @@ export const SallyView = () => {
            )}
         </div>
       </div>
-       <audio ref={audioRef} className="hidden" />
+       <audio ref={audioRef} className="hidden" onEnded={() => setIsAudioLoading(false)} />
     </div>
   );
 };

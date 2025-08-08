@@ -199,9 +199,6 @@ export const MealPlanView = () => {
         return;
     }
     
-    // This client-side check is removed as requested.
-    // The backend should handle profile validation.
-
     setIsSallyLoading(true);
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
@@ -257,7 +254,7 @@ export const MealPlanView = () => {
         const result = await response.json();
         const agentDialogue = result.agentDialogue;
         setSallyResponse(agentDialogue);
-        setCanPlayAudio(true);
+        await handlePlayAudio(agentDialogue);
         
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
@@ -375,26 +372,11 @@ export const MealPlanView = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="flex-grow">{sallyResponse || "Ask me about this meal and I'll tell you everything"}</span>
-                 {canPlayAudio && sallyResponse && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handlePlayAudio(sallyResponse)}
-                    disabled={isAudioLoading}
-                    className="h-8 w-8 flex-shrink-0 text-white"
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <PlayCircle className="h-5 w-5" />
-                    )}
-                  </Button>
-                )}
               </div>
             )}
         </div>
       </div>
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" onEnded={() => setIsAudioLoading(false)} />
     </div>
   );
 };
