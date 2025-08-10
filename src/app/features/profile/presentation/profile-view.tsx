@@ -218,6 +218,9 @@ export const ProfileView = () => {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
+                  captionLayout="dropdown-buttons"
+                  fromYear={1920}
+                  toYear={new Date().getFullYear()}
                   selected={
                     profile.birthDate ? new Date(profile.birthDate) : undefined
                   }
