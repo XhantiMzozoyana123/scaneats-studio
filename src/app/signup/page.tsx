@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,7 @@ import { AuthBackgroundImage } from '@/app/shared/components/auth-background-ima
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { API_BASE_URL } from '@/app/shared/lib/api';
-
-declare global {
-    interface Window {
-        AppleID: any;
-    }
-}
+import AppleLoginButton from '@/app/shared/components/apple-login-button';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -27,74 +22,6 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const appleClientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
-    const appleRedirectUri = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
-
-    if (typeof window.AppleID !== 'undefined' && appleClientId && appleRedirectUri) {
-        window.AppleID.auth.init({
-            clientId: appleClientId,
-            scope: 'email name',
-            redirectURI: appleRedirectUri,
-            state: 'signup',
-            usePopup: true
-        });
-    }
-  }, []);
-
-  const handleAppleLogin = async (idToken: string) => {
-    if (!idToken) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'Apple ID token is missing.' });
-        return;
-    }
-    setIsLoading(true);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/AppleAuth/signin`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-        });
-
-        if (!response.ok) {
-            let errorMsg = 'Apple login failed.';
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMsg = errorData.error;
-            } catch {}
-            throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        if (!data.token || !data.user || !data.user.id || !data.user.email) {
-            throw new Error('Invalid response received from server.');
-        }
-
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
-
-        toast({ title: 'Login Successful!', description: 'Welcome to ScanEats.' });
-        router.push('/dashboard');
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const triggerAppleSignIn = async () => {
-    try {
-        const data = await window.AppleID.auth.signIn();
-        if (data.authorization && data.authorization.id_token) {
-            handleAppleLogin(data.authorization.id_token);
-        }
-    } catch (error) {
-        console.error('Apple Sign-In error:', error);
-        toast({ variant: 'destructive', title: 'Sign Up Failed', description: 'Could not complete Sign In with Apple.' });
-    }
-  };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     setIsLoading(true);
@@ -289,9 +216,7 @@ export default function SignUpPage() {
                     width="320px"
                 />
             </div>
-            <Button onClick={triggerAppleSignIn} disabled={isLoading} variant="outline" className="w-full max-w-[320px] bg-white text-black hover:bg-gray-200">
-                Continue with Apple
-            </Button>
+            <AppleLoginButton />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
