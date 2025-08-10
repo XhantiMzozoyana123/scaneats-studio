@@ -1,34 +1,32 @@
-
 'use client';
 
-import { useEffect } from 'react';
-
-declare global {
-    interface Window {
-        AppleID: any;
-    }
-}
+import { Button } from '@/components/ui/button';
+import { FaApple } from 'react-icons/fa';
 
 export default function AppleLoginButton() {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.AppleID) {
-      window.AppleID.auth.init({
-        clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
+  const handleLogin = () => {
+    const appleSignInUrl =
+      `https://appleid.apple.com/auth/authorize?` +
+      new URLSearchParams({
+        response_type: 'code',
+        response_mode: 'form_post',
+        client_id: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
+        redirect_uri: 'https://api.scaneats.app/api/auth/callback/apple',
         scope: 'name email',
-        redirectURI: `${window.location.origin}/apple-redirect`,
-        state: 'scaneats-auth-state', 
-        usePopup: false,
-      });
-    }
-  }, []);
+        state: 'scaneats-auth-state',
+      }).toString();
+
+    window.location.href = appleSignInUrl;
+  };
 
   return (
-    <div
-      id="appleid-signin"
-      data-color="black"
-      data-border="true"
-      data-type="sign-in"
-      className="apple-login-button h-[40px] w-full max-w-[320px] [&>iframe]:!h-full [&>iframe]:!w-full"
-    ></div>
+    <Button
+      variant="outline"
+      onClick={handleLogin}
+      className="h-[40px] w-full max-w-[320px] bg-black text-white hover:bg-zinc-800 hover:text-white border-black"
+    >
+      <FaApple className="mr-2 h-5 w-5" />
+      Sign in with Apple
+    </Button>
   );
 }

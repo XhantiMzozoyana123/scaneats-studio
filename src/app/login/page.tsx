@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -29,51 +28,51 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
+      const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
-        });
+      });
 
-        if (!response.ok) {
-            let errorMsg = 'Google login failed.';
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMsg = errorData.error;
-            } catch {}
-            throw new Error(errorMsg);
-        }
+      if (!response.ok) {
+        let errorMsg = 'Google login failed.';
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMsg = errorData.error;
+        } catch {}
+        throw new Error(errorMsg);
+      }
 
-        const data = await response.json();
-        if (!data.token || !data.user || !data.user.id || !data.user.email) {
-            throw new Error('Invalid response received from server.');
-        }
+      const data = await response.json();
+      if (!data.token || !data.user || !data.user.id || !data.user.email) {
+        throw new Error('Invalid response received from server.');
+      }
 
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('userEmail', data.user.email);
 
-        toast({ title: 'Login Successful!', description: 'Welcome back.' });
-        router.push('/dashboard');
+      toast({ title: 'Login Successful!', description: 'Welcome back.' });
+      router.push('/dashboard');
     } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: error.message,
-        });
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: error.message,
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   useGoogleOneTapLogin({
     onSuccess: (credentialResponse) => {
-        if (credentialResponse.credential) {
-            handleGoogleLogin(credentialResponse.credential);
-        }
+      if (credentialResponse.credential) {
+        handleGoogleLogin(credentialResponse.credential);
+      }
     },
     onError: () => {
-        console.log('One Tap login error');
+      console.log('One Tap login error');
     },
   });
 
@@ -98,7 +97,7 @@ export default function LoginPage() {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userEmail', email);
-        
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome back.',
@@ -109,12 +108,13 @@ export default function LoginPage() {
         if (response.status === 401) {
           errorMessage = 'Incorrect email or password. Please try again.';
         } else if (response.status >= 500) {
-          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          errorMessage =
+            'Our servers are currently unavailable. Please try again later.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMessage = errorData.error;
-            } catch {}
+          try {
+            const errorData = await response.json();
+            if (errorData.error) errorMessage = errorData.error;
+          } catch {}
         }
         throw new Error(errorMessage);
       }
@@ -170,22 +170,32 @@ export default function LoginPage() {
               required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
+            <Link
+              href="/forgot-password"
+              className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white"
+            >
               Forgot?
             </Link>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Checkbox id="remember-me" className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" />
+              <Checkbox
+                id="remember-me"
+                className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
               <Label htmlFor="remember-me" className="text-white/70">
                 Remember me
               </Label>
             </div>
           </div>
-          
+
           <div className="pt-4">
-            <Button type="submit" disabled={isLoading} className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800"
+            >
               {isLoading ? <Loader2 className="animate-spin" /> : 'Log In'}
             </Button>
           </div>
@@ -201,26 +211,27 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
-        
+
         <div className="flex flex-col items-center justify-center space-y-2">
           <div className="w-full max-w-[320px]">
             <GoogleLogin
-                onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                        handleGoogleLogin(credentialResponse.credential);
-                    }
-                }}
-                onError={() => {
+              onSuccess={(credentialResponse) => {
+                if (credentialResponse.credential) {
+                  handleGoogleLogin(credentialResponse.credential);
+                }
+              }}
+              onError={() => {
                 toast({
-                    variant: 'destructive',
-                    title: 'Login Failed',
-                    description: 'Google authentication failed. Please try again.',
+                  variant: 'destructive',
+                  title: 'Login Failed',
+                  description:
+                    'Google authentication failed. Please try again.',
                 });
-                }}
-                theme="filled_black"
-                shape="rectangular"
-                size="large"
-                width="320px"
+              }}
+              theme="filled_black"
+              shape="rectangular"
+              size="large"
+              width="320px"
             />
           </div>
           <AppleLoginButton />
@@ -228,7 +239,10 @@ export default function LoginPage() {
 
         <p className="mt-8 text-center text-sm text-white/70">
           Don't have an account?{' '}
-          <Link href="/signup" className="font-semibold text-white hover:underline">
+          <Link
+            href="/signup"
+            className="font-semibold text-white hover:underline"
+          >
             Sign Up
           </Link>
         </p>

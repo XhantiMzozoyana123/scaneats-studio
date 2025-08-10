@@ -1,4 +1,3 @@
-
 import type { Metadata, Viewport } from 'next';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './globals.css';
@@ -27,9 +26,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1D122F",
+  themeColor: '#1D122F',
 };
-
 
 export default function RootLayout({
   children,
@@ -39,34 +37,41 @@ export default function RootLayout({
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!googleClientId) {
-    throw new Error("FATAL: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined in environment variables. Google Authentication cannot work without it.");
+    throw new Error(
+      'FATAL: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined in environment variables. Google Authentication cannot work without it.'
+    );
   }
 
   return (
     <html lang="en" className="dark">
       <head>
-         {/* PWA and Universal Icons */}
-         <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
+        {/* PWA and Universal Icons */}
+        <link
+          rel="icon"
+          href="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+          type="image/png"
+        />
 
-         {/* Apple Touch Icon (iOS Homescreen) & Fullscreen settings */}
-         <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" />
-         <meta name="apple-mobile-web-app-capable" content="yes" />
-         <meta name="mobile-web-app-capable" content="yes" />
-         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-         <meta name="apple-mobile-web-app-title" content="ScanEats" />
+        {/* Apple Touch Icon (iOS Homescreen) & Fullscreen settings */}
+        <link
+          rel="apple-touch-icon"
+          href="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+        />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="ScanEats" />
 
-         {/* Theme Color for Browser UI */}
-         <meta name="theme-color" content="#1D122F" />
-
-         {/* Sign In with Apple Script */}
-         <script type="text/javascript" src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js" async defer></script>
+        {/* Theme Color for Browser UI */}
+        <meta name="theme-color" content="#1D122F" />
       </head>
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
       >
-        <GoogleOAuthProvider
-          clientId={googleClientId}
-        >
+        <GoogleOAuthProvider clientId={googleClientId}>
           {children}
           <Toaster />
         </GoogleOAuthProvider>

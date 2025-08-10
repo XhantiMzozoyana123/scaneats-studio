@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -23,7 +22,9 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse
+  ) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
@@ -39,7 +40,7 @@ export default function SignUpPage() {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('userEmail', data.user.email);
-        
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome to ScanEats.',
@@ -93,16 +94,17 @@ export default function SignUpPage() {
       } else {
         let errorMessage = 'An unknown error occurred during registration.';
         if (response.status >= 500) {
-          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          errorMessage =
+            'Our servers are currently unavailable. Please try again later.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Keep the generic message
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
             }
+          } catch {
+            // Keep the generic message
+          }
         }
         throw new Error(errorMessage);
       }
@@ -204,19 +206,19 @@ export default function SignUpPage() {
             </span>
           </div>
         </div>
-        
+
         <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="w-full max-w-[320px]">
-                <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="filled_black"
-                    shape="rectangular"
-                    size="large"
-                    width="320px"
-                />
-            </div>
-            <AppleLoginButton />
+          <div className="w-full max-w-[320px]">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme="filled_black"
+              shape="rectangular"
+              size="large"
+              width="320px"
+            />
+          </div>
+          <AppleLoginButton />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
