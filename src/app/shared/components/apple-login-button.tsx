@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -5,10 +6,6 @@ import { FaApple } from 'react-icons/fa';
 
 export default function AppleLoginButton() {
   const handleLogin = () => {
-    // We pass the current URL as 'state' so the backend can redirect back here
-    // after the Apple login is complete.
-    const state = window.location.href;
-
     const appleSignInUrl =
       `https://appleid.apple.com/auth/authorize?` +
       new URLSearchParams({
@@ -17,7 +14,6 @@ export default function AppleLoginButton() {
         client_id: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
         redirect_uri: 'https://api.scaneats.app/api/auth/callback/apple',
         scope: 'name email',
-        state: state, // Pass the current page URL as state
       }).toString();
 
     window.location.href = appleSignInUrl;
