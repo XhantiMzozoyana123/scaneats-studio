@@ -202,28 +202,28 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="flex flex-col items-center space-y-2">
-            <div className="w-full max-w-[320px] flex justify-center">
-                <GoogleLogin
-                    onSuccess={(credentialResponse) => {
-                        if (credentialResponse.credential) {
-                            handleGoogleLogin(credentialResponse.credential);
-                        }
-                    }}
-                    onError={() => {
-                    toast({
-                        variant: 'destructive',
-                        title: 'Login Failed',
-                        description: 'Google authentication failed. Please try again.',
-                    });
-                    }}
-                    theme="filled_black"
-                    shape="rectangular"
-                    size="large"
-                    width="320px"
-                />
-            </div>
-             <AppleLoginButton />
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="w-full max-w-[320px]">
+            <GoogleLogin
+                onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                        handleGoogleLogin(credentialResponse.credential);
+                    }
+                }}
+                onError={() => {
+                toast({
+                    variant: 'destructive',
+                    title: 'Login Failed',
+                    description: 'Google authentication failed. Please try again.',
+                });
+                }}
+                theme="filled_black"
+                shape="rectangular"
+                size="large"
+                width="320px"
+            />
+          </div>
+          <AppleLoginButton />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">

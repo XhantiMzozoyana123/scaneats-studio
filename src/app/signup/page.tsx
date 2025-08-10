@@ -205,8 +205,8 @@ export default function SignUpPage() {
           </div>
         </div>
         
-        <div className="flex flex-col items-center space-y-2">
-            <div className="w-full max-w-[320px] flex justify-center">
+        <div className="flex flex-col items-center justify-center space-y-2">
+            <div className="w-full max-w-[320px]">
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}

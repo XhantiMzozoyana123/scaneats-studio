@@ -28,7 +28,7 @@ export default function AppleLoginButton() {
       data-color="black"
       data-border="true"
       data-type="sign-in"
-      className="w-full max-w-[320px] [&>iframe]:!w-full" // Ensure the button is responsive
+      className="apple-login-button h-[40px] w-full max-w-[320px] [&>iframe]:!h-full [&>iframe]:!w-full"
     ></div>
   );
 }
