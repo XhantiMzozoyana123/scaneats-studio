@@ -67,19 +67,20 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   
   const fetchProfile = useCallback(async () => {
-    setIsLoading(true);
+    // We start loading only if there's a token, otherwise we just show the initial state.
     const token = localStorage.getItem('authToken');
-    if (!token) {
-        setIsLoading(false);
+    if (token) {
+        setIsLoading(true);
+    } else {
         setProfile(initialProfileState);
         setInitialProfile(JSON.parse(JSON.stringify(initialProfileState)));
+        setIsLoading(false);
         return;
     }
 
     try {
         const { profile: fetchedProfile, isSubscribed } = await profileService.getProfile(token);
         
-        // Ensure we use the direct isSubscribed value from the API call.
         const finalProfile = { ...(fetchedProfile || initialProfileState), isSubscribed };
 
         setProfile(finalProfile);

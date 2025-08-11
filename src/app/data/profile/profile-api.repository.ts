@@ -25,18 +25,20 @@ export class ProfileApiRepository implements IProfileRepository {
   async getProfile(token: string): Promise<{ profile: Profile | null; isSubscribed: boolean }> {
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch profile and credit balance in parallel
-    const [profileRes, creditRes] = await Promise.all([
+    // Fetch profile, credit balance, and subscription status in parallel
+    const [profileRes, creditRes, subscriptionRes] = await Promise.all([
       fetch(`${API_BASE_URL}/api/profile`, { headers }),
       fetch(`${API_BASE_URL}/api/credit/balance`, { headers }),
+      fetch(`${API_BASE_URL}/api/event/subscription/status`, { headers }),
     ]);
 
-    if (profileRes.status === 401 || creditRes.status === 401) {
+    if (profileRes.status === 401 || creditRes.status === 401 || subscriptionRes.status === 401) {
         throw new Error('Session Expired');
     }
 
     let userProfile = initialProfileState;
     let credits = 0;
+    let isSubscribed = false;
 
     // Process profile response
     if (profileRes.ok) {
@@ -60,22 +62,15 @@ export class ProfileApiRepository implements IProfileRepository {
     } else {
         console.error('Failed to fetch credit balance', creditRes.statusText);
     }
-    
-    // Determine subscription status from the JWT claims.
-    let isSubscribed = false;
-    try {
-        const decodedToken = jwtDecode<AppJwtPayload>(token);
-        const roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-        if (Array.isArray(roles)) {
-            isSubscribed = roles.includes('Premium');
-        } else if (typeof roles === 'string') {
-            isSubscribed = roles === 'Premium';
-        }
-    } catch (e) {
-        console.error("Failed to decode token to check subscription status", e);
-        isSubscribed = false;
-    }
 
+    // Process subscription status response
+    if (subscriptionRes.ok) {
+        const subData = await subscriptionRes.json();
+        isSubscribed = subData.isSubscribed || false;
+    } else {
+        console.error('Failed to fetch subscription status', subscriptionRes.statusText);
+    }
+    
 
     // Merge all data into the final profile object
     const finalProfile = { ...userProfile, isSubscribed, credits };

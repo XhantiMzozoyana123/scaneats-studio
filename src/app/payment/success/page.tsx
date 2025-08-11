@@ -9,11 +9,13 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { BackgroundImage } from '@/app/shared/components/background-image';
 import { API_BASE_URL } from '@/app/shared/lib/api';
+import { useUserData } from '@/app/shared/context/user-data-context';
 
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { fetchProfile } = useUserData();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [message, setMessage] = useState({ title: '', description: '' });
 
@@ -45,8 +47,8 @@ function PaymentSuccessContent() {
         return;
       }
 
-      // According to the controller, the verification endpoint is at /api/subscription/verify
-      const verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
+      // According to the controller, the verification endpoint is at /api/event/last/{reference}
+      const verificationUrl = `${API_BASE_URL}/api/event/last/${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {
@@ -73,28 +75,38 @@ function PaymentSuccessContent() {
             throw new Error(errorMsg);
         }
         
-        // The backend controller returns a PaystackVerifyResultDto
-        const isSuccess = data.status && data.status.toLowerCase() === 'success';
-
-        if (isSuccess) {
+        // Check for the UserAccessToken in the response
+        if (data.userAccesToken) {
+          localStorage.setItem('authToken', data.userAccesToken);
+          
           setStatus('success');
           setMessage({
-              title: "Payment Successful!",
-              description: "Your account has been upgraded. Redirecting to dashboard...",
+              title: data.title || "Payment Successful!",
+              description: data.message || "Your account has been updated. Redirecting to dashboard...",
           });
-          
-          // CRITICAL: Update the auth token with the new one from the backend
-          if (data.accessToken) {
-            localStorage.setItem('authToken', data.accessToken);
-          }
+
+          // Refresh user data with the new token
+          await fetchProfile();
 
           setTimeout(() => {
               router.push('/dashboard');
           }, 3000);
+
+        } else if (data.title?.includes('Successful')) {
+            setStatus('success');
+            setMessage({
+                title: data.title,
+                description: data.message || "Your account has been updated. Redirecting to dashboard...",
+            });
+            // Refresh user data after successful credit purchase
+             await fetchProfile();
+             setTimeout(() => {
+                router.push('/dashboard');
+             }, 3000);
         } else {
            setStatus('error');
            setMessage({
-              title: 'Verification Failed',
+              title: data.title || 'Verification Failed',
               description: data.message || 'The transaction could not be verified or was not successful.',
            });
         }
@@ -115,7 +127,7 @@ function PaymentSuccessContent() {
     };
 
     verifyPayment();
-  }, [searchParams, router, toast]);
+  }, [searchParams, router, toast, fetchProfile]);
 
   const renderContent = () => {
     switch (status) {
@@ -167,7 +179,9 @@ function PaymentSuccessContent() {
 export default function PaymentSuccessPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
-            <PaymentSuccessContent />
+           <UserDataProvider>
+              <PaymentSuccessContent />
+            </UserDataProvider>
         </Suspense>
     )
 }
