@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { BackgroundImage } from '@/app/shared/components/background-image';
 import { API_BASE_URL } from '@/app/shared/lib/api';
-import { useUserData } from '@/app/shared/context/user-data-context';
+import { UserDataProvider, useUserData } from '@/app/shared/context/user-data-context';
 
 function PaymentSuccessContent() {
   const router = useRouter();
