@@ -212,7 +212,7 @@ export const SallyView = () => {
 
       const responseData = await response.json();
       const result = responseData.result;
-      const audioSpeech = responseData.audioSpeech; // This is the base64 encoded audio
+      const audioSpeech = responseData.audioSpeech;
 
       if (!result || !result.agentDialogue) {
         throw new Error("Sally didn't provide a response.");
@@ -220,7 +220,7 @@ export const SallyView = () => {
 
       setSallyResponse(result.agentDialogue);
       
-      if (audioSpeech && audioRef.current) {
+      if (audioSpeech && audioSpeech.fileContents && audioRef.current) {
         setIsAudioLoading(true);
         const audioSrc = `data:audio/mpeg;base64,${audioSpeech.fileContents}`;
         const audio = audioRef.current;

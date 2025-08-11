@@ -258,7 +258,7 @@ export const MealPlanView = () => {
       
       setSallyResponse(result.agentDialogue);
 
-      if (audioSpeech && audioRef.current) {
+      if (audioSpeech && audioSpeech.fileContents && audioRef.current) {
         setIsAudioLoading(true);
         const audioSrc = `data:audio/mpeg;base64,${audioSpeech.fileContents}`;
         const audio = audioRef.current;
