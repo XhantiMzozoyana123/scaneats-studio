@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign } from 'lucide-react';
+import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
@@ -239,6 +239,15 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         />
         <div className="absolute inset-0 bg-black/60" />
       </div>
+
+       <Button
+        onClick={() => onNavigate('home')}
+        variant="ghost"
+        className="absolute top-4 left-4 z-20 h-auto rounded-full bg-black/30 p-3 text-white backdrop-blur-sm hover:bg-black/50 hover:text-white"
+      >
+        <ArrowLeft size={20} />
+      </Button>
+
       <main className="container z-10 mx-auto flex h-full flex-col items-center justify-center overflow-y-auto p-4 pb-28">
         <div className="w-full max-w-sm space-y-4">
           <div className="relative w-full overflow-hidden rounded-2xl border-4 border-primary/50 shadow-lg bg-black aspect-[9/16]">
