@@ -171,72 +171,6 @@ export const MealPlanView = () => {
     }
   };
 
-  const handlePlayAudio = async (textToSpeak: string) => {
-    if (!textToSpeak || !audioRef.current) return;
-    setIsAudioLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/GoogleTTS/speak`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          Text: textToSpeak,
-          LanguageCode: 'en-US',
-          Gender: 2, // 2 corresponds to SsmlVoiceGender.Female
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch audio from server.');
-      }
-      
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("audio")) {
-        throw new Error("Received invalid content type from audio server.");
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      const audio = audioRef.current;
-      await new Promise<void>((resolve, reject) => {
-        if (audio) {
-          audio.src = audioUrl;
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-             playPromise.catch(error => {
-                console.error("Audio playback error", error);
-                reject(error);
-             });
-          }
-          audio.oncanplaythrough = () => {
-             // Audio is ready to play
-          };
-          audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            resolve();
-          };
-          audio.onerror = (e) => {
-            URL.revokeObjectURL(audioUrl);
-            reject(e);
-          };
-        } else {
-          reject(new Error('Audio element not found.'));
-        }
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Audio Error',
-        description: error.message || 'Could not play audio response.',
-      });
-    } finally {
-      setIsAudioLoading(false);
-    }
-  };
-
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) {
       setIsRecording(false);
@@ -315,15 +249,32 @@ export const MealPlanView = () => {
         throw new Error(errorData.message || `An error occurred: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const responseData = await response.json();
+      const result = responseData.result;
+      const audioSpeech = responseData.audioSpeech;
 
-      if (!result.agentDialogue) {
+      if (!result || !result.agentDialogue) {
         throw new Error("Sally didn't provide a response.");
       }
       
-      // Concurrently update text and fetch audio
       setSallyResponse(result.agentDialogue);
-      handlePlayAudio(result.agentDialogue);
+
+      if (audioSpeech && audioRef.current) {
+        setIsAudioLoading(true);
+        const audioSrc = `data:audio/mpeg;base64,${audioSpeech.fileContents}`;
+        const audio = audioRef.current;
+        audio.src = audioSrc;
+
+        const playPromise = audio.play();
+        if (playPromise) {
+            playPromise.then(() => setIsAudioLoading(false))
+            .catch(err => {
+                console.error("Audio playback error:", err);
+                setIsAudioLoading(false);
+                toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio.'});
+            });
+        }
+      }
       
       await fetchProfile(); // Refresh credits
     } catch (error: any) {
