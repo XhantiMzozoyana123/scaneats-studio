@@ -77,9 +77,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-        const { profile: userProfile, isSubscribed } = await profileService.getProfile(token);
+        const { profile: fetchedProfile, isSubscribed } = await profileService.getProfile(token);
         
-        const finalProfile = { ...(userProfile || initialProfileState), isSubscribed };
+        // Ensure we use the direct isSubscribed value from the API call.
+        const finalProfile = { ...(fetchedProfile || initialProfileState), isSubscribed };
+
         setProfile(finalProfile);
         setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
 
@@ -94,6 +96,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             router.push('/login');
         } else {
             console.error('Failed to load user data', error);
+            // On error, default to a non-subscribed state.
             const finalProfile = { ...initialProfileState, isSubscribed: false };
             setProfile(finalProfile);
             setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));

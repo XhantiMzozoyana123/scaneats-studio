@@ -18,13 +18,14 @@ export class ProfileApiRepository implements IProfileRepository {
   async getProfile(token: string): Promise<{ profile: Profile | null; isSubscribed: boolean }> {
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch profile and credit balance in parallel
-    const [profileRes, creditRes] = await Promise.all([
+    // Fetch profile, credit balance, and subscription status in parallel
+    const [profileRes, creditRes, subscriptionRes] = await Promise.all([
       fetch(`${API_BASE_URL}/api/profile`, { headers }),
       fetch(`${API_BASE_URL}/api/credit/balance`, { headers }),
+      fetch(`${API_BASE_URL}/api/subscription/status`, { headers })
     ]);
 
-    if (profileRes.status === 401 || creditRes.status === 401) {
+    if (profileRes.status === 401 || creditRes.status === 401 || subscriptionRes.status === 401) {
         throw new Error('Session Expired');
     }
 
@@ -42,7 +43,6 @@ export class ProfileApiRepository implements IProfileRepository {
                 birthDate: p.BirthDate ? new Date(p.BirthDate) : null,
                 weight: p.Weight || '',
             };
-            isSubscribed = p.isSubscribed ?? false;
         }
     } else if (profileRes.status !== 404) {
          console.error('Failed to fetch profile', profileRes.statusText);
@@ -55,9 +55,20 @@ export class ProfileApiRepository implements IProfileRepository {
     } else {
         console.error('Failed to fetch credit balance', creditRes.statusText);
     }
+    
+    // Process subscription response
+    if (subscriptionRes.ok) {
+        const subscriptionData = await subscriptionRes.json();
+        // The backend returns a boolean `IsSubscribed`
+        isSubscribed = subscriptionData.IsSubscribed === true;
+    } else {
+        console.error('Failed to fetch subscription status', subscriptionRes.statusText);
+    }
+
 
     // Merge all data into the final profile object
     const finalProfile = { ...userProfile, isSubscribed, credits };
+    // Also return isSubscribed separately for direct use in context
     return { profile: finalProfile, isSubscribed };
   }
 
