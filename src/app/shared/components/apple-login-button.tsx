@@ -7,14 +7,7 @@ import { FaApple } from 'react-icons/fa';
 export default function AppleLoginButton() {
   const handleLogin = () => {
     const appleSignInUrl =
-      `https://appleid.apple.com/auth/authorize?` +
-      new URLSearchParams({
-        response_type: 'code',
-        response_mode: 'form_post',
-        client_id: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
-        redirect_uri: 'https://api.scaneats.app/api/auth/callback/apple',
-        scope: 'name email',
-      }).toString();
+      `https://appleid.apple.com/auth/authorize?response_type=code&client_id=com.scaneats1.app&redirect_uri=https://api.scaneats.app/api/auth/apple/callback&scope=name%20email&response_mode=form_post`;
 
     window.location.href = appleSignInUrl;
   };
