@@ -454,24 +454,9 @@ export const MealPlanView = () => {
                 {sallyResponse ||
                   "Ask me about this meal and I'll tell you everything"}
               </span>
-              {sallyResponse &&
-                !sallyResponse.startsWith('Thinking about:') &&
-                !sallyResponse.startsWith('You need a subscription') &&
-                !sallyResponse.startsWith("You're out of credits") && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="shrink-0"
-                    onClick={() => handlePlayAudio(sallyResponse)}
-                    disabled={isAudioLoading}
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Play className="h-5 w-5" />
-                    )}
-                  </Button>
-                )}
+              {isAudioLoading && (
+                 <Loader2 className="h-5 w-5 animate-spin shrink-0" />
+              )}
             </div>
           )}
         </div>

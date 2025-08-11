@@ -363,25 +363,9 @@ export const SallyView = () => {
                 <strong>Sally</strong>
                 <span className="text-gray-600"> - {sallyResponse}</span>
               </div>
-              {sallyResponse &&
-                !sallyResponse.startsWith("I'm your personal assistant") &&
-                !sallyResponse.startsWith('Thinking about:') &&
-                !sallyResponse.startsWith('You need a subscription') &&
-                !sallyResponse.startsWith("You're out of credits") && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="shrink-0"
-                    onClick={() => handlePlayAudio(sallyResponse)}
-                    disabled={isAudioLoading}
-                  >
-                    {isAudioLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Play className="h-5 w-5" />
-                    )}
-                  </Button>
-                )}
+              {isAudioLoading && (
+                <Loader2 className="h-5 w-5 animate-spin shrink-0" />
+              )}
             </div>
           )}
         </div>
