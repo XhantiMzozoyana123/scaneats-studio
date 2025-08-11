@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useGoogleOneTapLogin, GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { useToast } from '@/app/shared/hooks/use-toast';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import AppleLoginButton from '@/app/shared/components/apple-login-button';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -272,5 +273,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
