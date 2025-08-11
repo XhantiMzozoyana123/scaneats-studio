@@ -43,7 +43,9 @@ function AuthHandler({
       }
       // Clean the URL by removing the token
       router.replace('/dashboard');
-      // Continue to verification
+      // Token found and set, user is verified.
+      setIsVerifying(false); 
+      return;
     }
 
     const token = localStorage.getItem('authToken');
