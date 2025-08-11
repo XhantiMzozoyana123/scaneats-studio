@@ -6,12 +6,12 @@ import { FaApple } from 'react-icons/fa';
 
 export default function AppleLoginButton() {
   const handleLogin = () => {
-    // The redirect_uri must point to a page on the frontend.
-    // The backend will handle the Apple callback and then redirect the user
-    // back to the frontend with a token. We point this to the login page
-    // as a safe destination.
+    // This URL initiates the Apple Sign-In flow.
+    // Apple will authenticate the user and then POST the result to the `redirect_uri`.
+    // The backend at this URI is responsible for validating the response from Apple,
+    // creating a session, and then redirecting the user back to the frontend app with a token.
     const appleSignInUrl =
-      `https://appleid.apple.com/auth/authorize?response_type=code&client_id=com.scaneats1.app&redirect_uri=https://user.scaneats.app/login&scope=name%20email&response_mode=form_post`;
+      `https://appleid.apple.com/auth/authorize?response_type=code&client_id=com.scaneats1.app&redirect_uri=https://api.scaneats.app/api/Auth/apple-signin-callback&scope=name%20email&response_mode=form_post`;
 
     window.location.href = appleSignInUrl;
   };
