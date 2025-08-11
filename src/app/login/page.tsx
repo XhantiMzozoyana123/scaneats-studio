@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useGoogleOneTapLogin, GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,10 +16,41 @@ import AppleLoginButton from '@/app/shared/components/apple-login-button';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      router.push('/dashboard');
+      return;
+    }
+
+    // This handles the redirect from Apple Sign-In
+    const appleToken = searchParams.get('token');
+    if (appleToken) {
+      try {
+        // Assume the backend has already verified the token and created the user.
+        // The backend should return the same JWT structure as other login methods.
+        const decodedToken: any = JSON.parse(atob(appleToken.split('.')[1]));
+        localStorage.setItem('authToken', appleToken);
+        localStorage.setItem('userId', decodedToken.sub);
+        localStorage.setItem('userEmail', decodedToken.email);
+        toast({ title: 'Login Successful!', description: 'Welcome back.' });
+        router.push('/dashboard');
+      } catch (error) {
+         toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'Could not process Apple Sign-In. Please try again.',
+        });
+        router.replace('/login'); // Clean URL
+      }
+    }
+  }, [router, searchParams, toast]);
 
   const handleGoogleLogin = async (idToken: string) => {
     if (!idToken) {
@@ -128,13 +159,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      router.push('/dashboard');
-    }
-  }, [router]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
