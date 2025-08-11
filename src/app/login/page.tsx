@@ -30,6 +30,10 @@ function LoginForm() {
       return;
     }
 
+    if (!searchParams) {
+      return;
+    }
+
     // This handles the redirect from Apple Sign-In
     const appleToken = searchParams.get('token');
     if (appleToken) {
