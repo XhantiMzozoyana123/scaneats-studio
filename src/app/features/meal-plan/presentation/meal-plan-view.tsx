@@ -245,8 +245,7 @@ export const MealPlanView = () => {
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `An error occurred: ${response.statusText}`);
+        throw response;
       }
 
       const responseData = await response.json();
@@ -278,12 +277,22 @@ export const MealPlanView = () => {
       
       await fetchProfile(); // Refresh credits
     } catch (error: any) {
-      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+      let errorMessage = 'Sorry, I had a little trouble thinking. Please try again.';
+      try {
+        const errorData = await error.json();
+        errorMessage = errorData.message || errorData.title || errorMessage;
+      } catch (jsonError) {
+        // Fallback if the error response isn't JSON
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+      }
+      
+      setSallyResponse(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description:
-          error.message || 'An error occurred while talking to Sally.',
+        description: errorMessage,
       });
     } finally {
       setSallyProgress(100);
