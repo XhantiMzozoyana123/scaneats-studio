@@ -135,7 +135,7 @@ export const SallyView = () => {
   };
 
   const handlePlayAudio = async (textToSpeak: string) => {
-    if (!textToSpeak || isAudioLoading || !audioRef.current) return;
+    if (!textToSpeak || !audioRef.current) return;
     setIsAudioLoading(true);
 
     try {
@@ -200,13 +200,6 @@ export const SallyView = () => {
     }
   };
   
-  useEffect(() => {
-    if (sallyResponse && !isLoading && sallyResponse !== "I'm your personal assistant, ask me anything about your body." && !sallyResponse.startsWith("Thinking about:") && !sallyResponse.startsWith("You need a subscription") && !sallyResponse.startsWith("You're out of credits!") && !sallyResponse.startsWith("Sorry, I had trouble")) {
-      handlePlayAudio(sallyResponse);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sallyResponse, isLoading]);
-
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) {
       setIsRecording(false);
@@ -290,7 +283,10 @@ export const SallyView = () => {
         throw new Error("Sally didn't provide a response.");
       }
 
+      // Concurrently update text and fetch audio
       setSallyResponse(result.agentDialogue);
+      handlePlayAudio(result.agentDialogue);
+      
       await fetchProfile(); // Refresh credits
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
