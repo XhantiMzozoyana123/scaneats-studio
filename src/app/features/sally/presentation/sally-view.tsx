@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Mic, CircleDollarSign, Play } from 'lucide-react';
+import { Loader2, Mic, CircleDollarSign } from 'lucide-react';
 
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
@@ -199,6 +199,13 @@ export const SallyView = () => {
       setIsAudioLoading(false);
     }
   };
+  
+  useEffect(() => {
+    if (sallyResponse && !isLoading && sallyResponse !== "I'm your personal assistant, ask me anything about your body." && !sallyResponse.startsWith("Thinking about:") && !sallyResponse.startsWith("You need a subscription") && !sallyResponse.startsWith("You're out of credits!") && !sallyResponse.startsWith("Sorry, I had trouble")) {
+      handlePlayAudio(sallyResponse);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sallyResponse, isLoading]);
 
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) {
@@ -284,7 +291,6 @@ export const SallyView = () => {
       }
 
       setSallyResponse(result.agentDialogue);
-      await handlePlayAudio(result.agentDialogue);
       await fetchProfile(); // Refresh credits
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');

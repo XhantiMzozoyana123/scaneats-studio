@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { Loader2, Info, Mic, CircleDollarSign, Play } from 'lucide-react';
+import { Loader2, Info, Mic, CircleDollarSign } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
 import type { ScannedFood } from '@/app/domain/scanned-food';
@@ -237,6 +237,14 @@ export const MealPlanView = () => {
     }
   };
 
+  useEffect(() => {
+    if (sallyResponse && !isSallyLoading && !sallyResponse.startsWith("Thinking about:") && !sallyResponse.startsWith("You need a subscription") && !sallyResponse.startsWith("You're out of credits!") && !sallyResponse.startsWith("Sorry, I had trouble")) {
+        handlePlayAudio(sallyResponse);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sallyResponse, isSallyLoading]);
+
+
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) {
       setIsRecording(false);
@@ -322,7 +330,6 @@ export const MealPlanView = () => {
       }
       
       setSallyResponse(result.agentDialogue);
-      await handlePlayAudio(result.agentDialogue);
       await fetchProfile(); // Refresh credits
     } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
