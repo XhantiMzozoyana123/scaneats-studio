@@ -30,6 +30,9 @@ function AuthHandler({
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
     const tokenFromUrl = searchParams.get('token');
 
     if (tokenFromUrl) {
