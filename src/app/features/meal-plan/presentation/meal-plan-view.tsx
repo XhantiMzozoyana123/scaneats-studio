@@ -215,6 +215,9 @@ export const MealPlanView = () => {
         body: JSON.stringify({
           clientDialogue: userInput,
           clientName: profile.name,
+          TextToSpeech: {
+            Text: userInput,
+          },
         }),
       });
 

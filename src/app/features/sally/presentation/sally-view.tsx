@@ -177,6 +177,9 @@ export const SallyView = () => {
         body: JSON.stringify({
           clientDialogue: userInput,
           clientName: profile.name,
+          TextToSpeech: {
+            Text: userInput,
+          },
         }),
       });
 
