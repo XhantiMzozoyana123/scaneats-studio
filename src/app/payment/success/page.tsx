@@ -45,11 +45,12 @@ function PaymentSuccessContent() {
         return;
       }
 
-      const verificationUrl = `${API_BASE_URL}/api/event/last/${encodeURIComponent(reference)}`;
+      // According to the controller, the verification endpoint is at /api/subscription/verify
+      const verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {
-          method: 'GET',
+          method: 'GET', // The controller uses HttpGet for verification
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
@@ -60,38 +61,31 @@ function PaymentSuccessContent() {
             throw new Error('Your session has expired. Please log in again.');
         }
         
+        const data = await response.json();
+
         if (!response.ok) {
-            let errorMsg = 'Failed to verify your payment.';
+            let errorMsg = data.message || 'Failed to verify your payment.';
             if (response.status === 404) {
                 errorMsg = 'Could not find the payment to verify. Please contact support.';
             } else if (response.status >= 500) {
                 errorMsg = 'Our servers are experiencing issues. Please try again later.';
-            } else {
-                try {
-                    const errorData = await response.json();
-                    if (errorData.message) {
-                      errorMsg = errorData.message;
-                    }
-                } catch {
-                    // keep generic message
-                }
             }
             throw new Error(errorMsg);
         }
-
-        const data = await response.json();
         
-        const isSuccess = data.title && data.title.toLowerCase().includes('successful');
+        // The backend controller returns a PaystackVerifyResultDto
+        const isSuccess = data.status && data.status.toLowerCase() === 'success';
 
         if (isSuccess) {
           setStatus('success');
           setMessage({
-              title: data.title,
-              description: data.message,
+              title: "Payment Successful!",
+              description: "Your account has been upgraded. Redirecting to dashboard...",
           });
           
-          if (data.userAccesToken) {
-            localStorage.setItem('authToken', data.userAccesToken);
+          // CRITICAL: Update the auth token with the new one from the backend
+          if (data.accessToken) {
+            localStorage.setItem('authToken', data.accessToken);
           }
 
           setTimeout(() => {
@@ -100,7 +94,7 @@ function PaymentSuccessContent() {
         } else {
            setStatus('error');
            setMessage({
-              title: data.title || 'Verification Failed',
+              title: 'Verification Failed',
               description: data.message || 'The transaction could not be verified or was not successful.',
            });
         }

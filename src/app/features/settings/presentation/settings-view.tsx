@@ -153,7 +153,7 @@ export const SettingsView = ({
           title: 'Subscription Cancelled',
           description: 'Your subscription has been successfully cancelled.',
         });
-        await fetchProfile(); // Refresh user data
+        await fetchProfile(); // Refresh user data to update UI
       } else {
         let errorMessage = 'Failed to cancel subscription.';
         if (response.status === 401) {
@@ -163,6 +163,9 @@ export const SettingsView = ({
         } else if (response.status >= 500) {
           errorMessage =
             'Our servers are experiencing issues. Please try again later.';
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.message) errorMessage = errorData.message;
         }
         throw new Error(errorMessage);
       }
