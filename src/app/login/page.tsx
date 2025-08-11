@@ -14,6 +14,14 @@ import { KeyRound, Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import AppleLoginButton from '@/app/shared/components/apple-login-button';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  sub: string;
+  email: string;
+  jti: string;
+}
+
 
 function LoginForm() {
   const router = useRouter();
@@ -23,6 +31,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // This effect handles the token from the URL after external auth (Google, Apple)
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -34,23 +43,20 @@ function LoginForm() {
       return;
     }
 
-    // This handles the redirect from Apple Sign-In
-    const appleToken = searchParams.get('token');
-    if (appleToken) {
+    const tokenFromUrl = searchParams.get('token');
+    if (tokenFromUrl) {
       try {
-        // Assume the backend has already verified the token and created the user.
-        // The backend should return the same JWT structure as other login methods.
-        const decodedToken: any = JSON.parse(atob(appleToken.split('.')[1]));
-        localStorage.setItem('authToken', appleToken);
+        const decodedToken = jwtDecode<DecodedToken>(tokenFromUrl);
+        localStorage.setItem('authToken', tokenFromUrl);
         localStorage.setItem('userId', decodedToken.sub);
         localStorage.setItem('userEmail', decodedToken.email);
         toast({ title: 'Login Successful!', description: 'Welcome back.' });
-        router.push('/dashboard');
+        router.replace('/dashboard'); // Use replace to avoid back button issues
       } catch (error) {
          toast({
             variant: 'destructive',
             title: 'Login Failed',
-            description: 'Could not process Apple Sign-In. Please try again.',
+            description: 'There was a problem with your login. Please try again.',
         });
         router.replace('/login'); // Clean URL
       }
