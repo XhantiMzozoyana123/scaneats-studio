@@ -129,13 +129,19 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
 
   const handleSendScan = useCallback(async () => {
     if (!capturedImage) return;
+
+    if (!profile) {
+      toast({
+        variant: 'destructive',
+        title: 'Profile Not Loaded',
+        description: 'Please wait a moment for your profile to load and try again.',
+      });
+      return;
+    }
     
-    if (!profile || profile.id === null) {
-        toast({
-            variant: 'destructive',
-            title: 'Profile Not Loaded',
-            description: 'Please wait for your profile to load before scanning.',
-        });
+    // Check for subscription *before* making the API call
+    if (!profile.isSubscribed) {
+        setSubscriptionModalOpen(true);
         return;
     }
 
