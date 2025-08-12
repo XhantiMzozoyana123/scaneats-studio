@@ -67,7 +67,7 @@ function LoginForm() {
     }
   }, [router]);
 
-  const handleGoogleLogin = async (idToken: string) => {
+  const handleExternalAuth = async (idToken: string) => {
     if (!idToken) {
       throw new Error('Google ID token is missing.');
     }
@@ -114,7 +114,7 @@ function LoginForm() {
   useGoogleOneTapLogin({
     onSuccess: (credentialResponse) => {
       if (credentialResponse.credential) {
-        handleGoogleLogin(credentialResponse.credential);
+        handleExternalAuth(credentialResponse.credential);
       }
     },
     onError: () => {
@@ -256,7 +256,7 @@ function LoginForm() {
             <GoogleLogin
               onSuccess={(credentialResponse) => {
                 if (credentialResponse.credential) {
-                  handleGoogleLogin(credentialResponse.credential);
+                  handleExternalAuth(credentialResponse.credential);
                 }
               }}
               onError={() => {
