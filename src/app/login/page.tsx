@@ -33,35 +33,39 @@ function LoginForm() {
 
   // This effect handles the token from the URL after external auth (Google, Apple)
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      router.push('/dashboard');
-      return;
-    }
-
     if (!searchParams) {
       return;
     }
-
     const tokenFromUrl = searchParams.get('token');
+
     if (tokenFromUrl) {
+      localStorage.setItem('authToken', tokenFromUrl);
       try {
         const decodedToken = jwtDecode<DecodedToken>(tokenFromUrl);
-        localStorage.setItem('authToken', tokenFromUrl);
         localStorage.setItem('userId', decodedToken.sub);
         localStorage.setItem('userEmail', decodedToken.email);
         toast({ title: 'Login Successful!', description: 'Welcome back.' });
-        router.replace('/dashboard'); // Use replace to avoid back button issues
       } catch (error) {
+        console.error('Failed to decode token from URL', error);
          toast({
             variant: 'destructive',
             title: 'Login Failed',
             description: 'There was a problem with your login. Please try again.',
         });
-        router.replace('/login'); // Clean URL
+      } finally {
+        // Always redirect and clean the URL
+        router.replace('/dashboard');
       }
     }
   }, [router, searchParams, toast]);
+
+  // Check for existing token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   const handleGoogleLogin = async (idToken: string) => {
     if (!idToken) {

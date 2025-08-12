@@ -2,73 +2,41 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { FaApple } from 'react-icons/fa';
-import { SignInWithApple } from '@capacitor-community/apple-sign-in';
-import { useToast } from '@/app/shared/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
 export default function AppleLoginButton() {
-  const router = useRouter();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setIsLoading(true);
-    try {
-      const result = await SignInWithApple.authorize();
 
-      const { identityToken } = result.response;
-      if (!identityToken) {
-        throw new Error('Apple Sign-In failed: No identity token received.');
-      }
+    // This is for a web-based flow. The user will be redirected to Apple to sign in.
+    const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID; // Your Apple Services ID
+    
+    // The backend endpoint that Apple will redirect to after successful authentication.
+    const redirectURI = `${API_BASE_URL}/api/Auth/apple-signin-callback`;
 
-      // Send the identityToken to your backend for verification
-      const backendResponse = await fetch(`${API_BASE_URL}/api/Auth/apple`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: identityToken }),
-      });
-
-      if (!backendResponse.ok) {
-        let errorMsg = 'Apple sign-in failed on the server.';
-        try {
-          const errorData = await backendResponse.json();
-          if (errorData.error) errorMsg = errorData.error;
-        } catch {}
-        throw new Error(errorMsg);
-      }
-
-      const data = await backendResponse.json();
-      if (!data.token || !data.user || !data.user.id || !data.user.email) {
-        throw new Error('Invalid response received from server.');
-      }
-
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user.id);
-      localStorage.setItem('userEmail', data.user.email);
-
-      toast({ title: 'Login Successful!', description: 'Welcome back.' });
-      router.push('/dashboard');
-
-    } catch (error: any) {
-      // Handle cases where the user cancels the sign-in prompt
-      if (error.message && error.message.includes('canceled by user')) {
-        console.log('Apple Sign-In canceled by user.');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Apple Sign-In Failed',
-          description: error.message || 'An unknown error occurred.',
-        });
-      }
-    } finally {
+    if (!clientId) {
+      console.error("FATAL: NEXT_PUBLIC_APPLE_CLIENT_ID is not defined in environment variables.");
       setIsLoading(false);
+      return;
     }
+    
+    // Construct the Apple authentication URL
+    const appleAuthUrl = `https://appleid.apple.com/auth/authorize?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectURI,
+      response_type: 'code id_token', // Request authorization code and id token
+      scope: 'name email', // Request user's name and email
+      response_mode: 'form_post', // The response will be sent as a POST request
+      state: 'STATE', // A random string for security, you can generate this dynamically
+    }).toString()}`;
+
+    // Redirect the user to Apple's authentication page
+    window.location.href = appleAuthUrl;
   };
 
   return (
