@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useGoogleOneTapLogin, GoogleLogin } from '@react-oauth/google';
+import { useGoogleOneTapLogin, GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,20 +44,22 @@ function LoginForm() {
         const decodedToken = jwtDecode<DecodedToken>(tokenFromUrl);
         localStorage.setItem('userId', decodedToken.sub);
         localStorage.setItem('userEmail', decodedToken.email);
-        toast({ title: 'Login Successful!', description: 'Welcome back.' });
+        // Redirect immediately, the dashboard layout will handle auth verification
+        router.replace('/dashboard');
       } catch (error) {
         console.error('Failed to decode token from URL', error);
-         toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: 'There was a problem with your login. Please try again.',
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'There was a problem with your login token. Please try again.',
         });
-      } finally {
-        // Always redirect and clean the URL
-        router.replace('/dashboard');
+        // Clear the bad token and URL
+        localStorage.removeItem('authToken');
+        router.replace('/login');
       }
     }
   }, [router, searchParams, toast]);
+
 
   // Check for existing token on mount
   useEffect(() => {
@@ -102,8 +104,6 @@ function LoginForm() {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('userId', data.user.id);
       localStorage.setItem('userEmail', data.user.email);
-
-      toast({ title: 'Login Successful!', description: 'Welcome back.' });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -150,10 +150,6 @@ function LoginForm() {
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userEmail', email);
 
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome back.',
-        });
         router.push('/dashboard');
       } else {
         let errorMessage = 'An unknown error occurred during login.';
@@ -260,7 +256,7 @@ function LoginForm() {
         <div className="flex flex-col items-center justify-center space-y-2">
           <div className="w-full max-w-[320px]">
             <GoogleLogin
-              onSuccess={(credentialResponse) => {
+              onSuccess={(credentialResponse: CredentialResponse) => {
                 if (credentialResponse.credential) {
                   handleExternalAuth(credentialResponse.credential);
                 }

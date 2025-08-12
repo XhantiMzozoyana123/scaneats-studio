@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
+import { useToast } from '@/app/shared/hooks/use-toast';
 
 import { UserDataProvider } from '@/app/shared/context/user-data-context';
 
@@ -28,6 +29,7 @@ function AuthHandler({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!searchParams) {
@@ -55,9 +57,15 @@ function AuthHandler({
     if (!token) {
       router.replace('/login');
     } else {
+      // Check if it's the first load of the dashboard
+      const isFirstLoad = !sessionStorage.getItem('dashboardLoaded');
+      if (isFirstLoad) {
+        toast({ title: 'Login Successful!', description: 'Welcome back.' });
+        sessionStorage.setItem('dashboardLoaded', 'true');
+      }
       setIsVerifying(false);
     }
-  }, [router, searchParams]);
+  }, [router, searchParams, toast]);
 
   useEffect(() => {
     const handler = (e: Event) => {
