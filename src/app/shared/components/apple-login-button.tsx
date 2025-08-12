@@ -18,8 +18,7 @@ export default function AppleLoginButton() {
 
     // The backend endpoint that Apple will redirect to after successful authentication.
     // This URL MUST be registered as an authorized redirect URI in your Apple Developer account.
-    // Using a stable production URL is often required even during local development.
-    const redirectURI = `https://api.scaneats.app/api/Auth/apple-signin-callback`;
+    const redirectURI = `https://api.scaneats.app/api/auth/apple/callback`;
 
     if (!clientId) {
       console.error("FATAL: NEXT_PUBLIC_APPLE_CLIENT_ID is not defined in environment variables.");
