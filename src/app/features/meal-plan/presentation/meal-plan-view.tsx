@@ -156,14 +156,14 @@ export const MealPlanView = () => {
     setSallyResponse(null);
 
     try {
-      // First, ensure we have microphone permission.
+      // First, ensure we have microphone permission by requesting it explicitly.
       // This will prompt the user if permission hasn't been granted yet.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // We can immediately stop the tracks as we only needed to get permission.
       // The SpeechRecognition API will handle the actual stream internally.
       stream.getTracks().forEach(track => track.stop());
 
-      // Now that we have permission, start the recognition process.
+      // Now that we have confirmed permission, start the recognition process.
       setIsRecording(true);
       recognitionRef.current.start();
     } catch (error) {
