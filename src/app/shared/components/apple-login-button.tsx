@@ -1,25 +1,20 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FaApple } from 'react-icons/fa';
 import { Loader2 } from 'lucide-react';
 
 export default function AppleLoginButton() {
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = () => {
-    setIsLoading(true);
-
-    const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
-    
     // This MUST exactly match the URI registered in the Apple Developer portal.
     const redirectURI = 'https://api.scaneats.app/api/auth/apple/callback';
+    const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
 
     if (!clientId) {
       console.error("FATAL: NEXT_PUBLIC_APPLE_CLIENT_ID is not defined in environment variables.");
-      setIsLoading(false);
+      // Optionally show a toast to the user
       return;
     }
 
@@ -41,17 +36,10 @@ export default function AppleLoginButton() {
     <Button
       variant="outline"
       onClick={handleLogin}
-      disabled={isLoading}
       className="h-[40px] w-full max-w-[320px] bg-black text-white hover:bg-zinc-800 hover:text-white border-black"
     >
-      {isLoading ? (
-        <Loader2 className="animate-spin" />
-      ) : (
-        <>
-          <FaApple className="mr-2 h-5 w-5" />
-          Sign in with Apple
-        </>
-      )}
+      <FaApple className="mr-2 h-5 w-5" />
+      Sign in with Apple
     </Button>
   );
 }
