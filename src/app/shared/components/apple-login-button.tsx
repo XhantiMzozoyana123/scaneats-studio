@@ -13,6 +13,8 @@ export default function AppleLoginButton() {
     setIsLoading(true);
 
     const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+    
+    // This MUST exactly match the URI registered in the Apple Developer portal.
     const redirectURI = 'https://api.scaneats.app/api/auth/apple/callback';
 
     if (!clientId) {
@@ -21,15 +23,17 @@ export default function AppleLoginButton() {
       return;
     }
 
+    // This URL initiates the web-based Apple Sign-In flow.
     const appleAuthUrl = `https://appleid.apple.com/auth/authorize?${new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectURI,
       response_type: 'code id_token',
       scope: 'name email',
       response_mode: 'form_post',
-      state: 'STATE', 
+      state: 'STATE', // A unique value to prevent CSRF attacks
     }).toString()}`;
 
+    // Redirect the user to Apple's authentication page.
     window.location.href = appleAuthUrl;
   };
 

@@ -69,7 +69,12 @@ function LoginForm() {
 
   const handleExternalAuth = async (idToken: string) => {
     if (!idToken) {
-      throw new Error('Google ID token is missing.');
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'Google ID token is missing.',
+      });
+      return;
     }
     setIsLoading(true);
 
@@ -120,6 +125,7 @@ function LoginForm() {
     onError: () => {
       console.log('One Tap login error');
     },
+    disabled: !!(searchParams && searchParams.get('token'))
   });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
