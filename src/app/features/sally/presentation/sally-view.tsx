@@ -114,14 +114,22 @@ export const SallyView = () => {
       setIsRecording(false);
       return;
     }
-    if (isLoading) return;
+
+    if (isLoading || !recognitionRef.current) return;
 
     setSallyResponse('');
 
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // First, ensure we have microphone permission.
+      // This will prompt the user if permission hasn't been granted yet.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // We can immediately stop the tracks as we only needed to get permission.
+      // The SpeechRecognition API will handle the actual stream internally.
+      stream.getTracks().forEach(track => track.stop());
+
+      // Now that we have permission, start the recognition process.
       setIsRecording(true);
-      recognitionRef.current?.start();
+      recognitionRef.current.start();
     } catch (error) {
       console.error('Microphone permission error:', error);
       toast({
