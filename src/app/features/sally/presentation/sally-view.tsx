@@ -176,19 +176,23 @@ export const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
+      const payload = {
+          clientDialogue: userInput,
+          clientName: profile.name,
+          TextToSpeech: {
+              Text: userInput,
+              LanguageCode: "en-US", // Default language
+              Gender: "Female" // Default gender
+          },
+      };
+      
       const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({
-          clientDialogue: userInput,
-          clientName: profile.name,
-          TextToSpeech: {
-            Text: userInput,
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.status === 403) {
@@ -347,3 +351,5 @@ export const SallyView = () => {
     </div>
   );
 };
+
+    
