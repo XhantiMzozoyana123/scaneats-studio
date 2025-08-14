@@ -131,9 +131,9 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     if (!capturedImage) return;
 
     const token = localStorage.getItem('authToken');
-    const userIdStr = localStorage.getItem('userId');
+    const userId = localStorage.getItem('userId');
     
-    if (!token || !userIdStr) {
+    if (!token || !userId) {
         toast({
             variant: 'destructive',
             title: 'Authentication Error',
@@ -147,18 +147,11 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
 
     try {
       const base64Image = capturedImage.split(',')[1];
-      const userId = parseInt(userIdStr, 10);
-
-      if (isNaN(userId)) {
-        throw new Error('Invalid user ID found. Please log in again.');
-      }
       
       const payload = {
         Command: "scan",
         Base64: base64Image,
-        Logging: {
-            ProfileId: userId
-        }
+        UserId: userId,
       };
 
       const response = await fetch(`${API_BASE_URL}/api/scan`, {
@@ -216,7 +209,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       });
       onNavigate('meal-plan');
 
-    } catch (error: any) {
+    } catch (error: any) => {
       if (
         error.message !== 'Subscription required' && 
         error.message !== 'Out of credits' &&
