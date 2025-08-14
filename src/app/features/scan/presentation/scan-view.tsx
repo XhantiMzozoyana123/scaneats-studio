@@ -153,18 +153,24 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         throw new Error("Authentication token not found. Please log in again.");
       }
       
+      const payload = {
+        Command: "scan",
+        Base64: capturedImage,
+        Logging: {
+            ProfileId: profile.id,
+            ChatId: null,
+            ScanId: null,
+            FoodId: null,
+        }
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/scan`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            Base64: capturedImage,
-            Logging: {
-                ProfileId: profile.id,
-            }
-          })
+          body: JSON.stringify(payload)
       });
 
       if (response.status === 401) {
