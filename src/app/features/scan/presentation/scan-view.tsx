@@ -139,12 +139,6 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       return;
     }
     
-    // Check for subscription *before* making the API call
-    if (!profile.isSubscribed) {
-        setSubscriptionModalOpen(true);
-        return;
-    }
-
     setIsSending(true);
 
     try {
