@@ -209,7 +209,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       });
       onNavigate('meal-plan');
 
-    } catch (error: any) => {
+    } catch (error: any) {
       if (
         error.message !== 'Subscription required' && 
         error.message !== 'Out of credits' &&
