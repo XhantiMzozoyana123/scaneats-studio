@@ -177,13 +177,8 @@ export const SallyView = () => {
 
     try {
       const payload = {
-          clientDialogue: userInput,
-          clientName: profile.name,
-          TextToSpeech: {
-              Text: userInput,
-              LanguageCode: "en-US", // Default language
-              Gender: "Female" // Default gender
-          },
+        clientDialogue: userInput,
+        clientName: profile.name,
       };
       
       const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
@@ -351,5 +346,3 @@ export const SallyView = () => {
     </div>
   );
 };
-
-    

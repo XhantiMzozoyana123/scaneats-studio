@@ -213,14 +213,9 @@ export const MealPlanView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
-      const payload = {
-          clientDialogue: userInput,
-          clientName: profile.name,
-          TextToSpeech: {
-              Text: userInput,
-              LanguageCode: "en-US", // Default language
-              Gender: "Female" // Default gender
-          },
+       const payload = {
+        clientDialogue: userInput,
+        clientName: profile.name,
       };
 
       const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
@@ -441,5 +436,3 @@ export const MealPlanView = () => {
     </div>
   );
 };
-
-    
