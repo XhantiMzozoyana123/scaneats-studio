@@ -130,7 +130,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
   const handleSendScan = useCallback(async () => {
     if (!capturedImage) return;
 
-    if (!profile) {
+    if (!profile || profile.id === null) {
       toast({
         variant: 'destructive',
         title: 'Profile Not Loaded',
@@ -147,14 +147,14 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         throw new Error("Authentication token not found. Please log in again.");
       }
       
+      // The backend expects raw base64, not a data URI.
+      const base64Image = capturedImage.split(',')[1];
+      
       const payload = {
         Command: "scan",
-        Base64: capturedImage,
+        Base64: base64Image,
         Logging: {
-            ProfileId: profile.id,
-            ChatId: null,
-            ScanId: null,
-            FoodId: null,
+            ProfileId: profile.id
         }
       };
 
@@ -193,10 +193,10 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       }
       
       if (!response.ok) {
-        let errorMsg = "Scan failed";
+        let errorMsg = `Scan failed with status: ${response.status}`;
         try {
             const errorData = await response.json();
-            errorMsg = errorData.message || errorData.error || errorMsg;
+            errorMsg = errorData.message || errorData.error || errorData.title || errorMsg;
         } catch {}
         throw new Error(errorMsg);
       }
