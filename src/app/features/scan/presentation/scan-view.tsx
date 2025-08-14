@@ -44,7 +44,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     };
   }, []);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     if (typeof window === 'undefined' || !navigator.mediaDevices) {
       setCameraState('nocamera');
       return;
@@ -93,7 +93,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       });
       setCameraState('denied');
     }
-  };
+  }, [toast]);
 
   const handleCapture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || cameraState !== 'running') return;
@@ -148,6 +148,10 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     try {
       const base64Image = capturedImage.split(',')[1];
       const userId = parseInt(userIdStr, 10);
+
+      if (isNaN(userId)) {
+        throw new Error('Invalid user ID found. Please log in again.');
+      }
       
       const payload = {
         Command: "scan",
@@ -195,7 +199,11 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         let errorMsg = `Scan failed with status: ${response.status}`;
         try {
             const errorData = await response.json();
-            errorMsg = errorData.message || errorData.error || errorData.title || errorMsg;
+            if (errorData.title) {
+               errorMsg = errorData.title; // For "One or more validation errors occurred."
+            } else if (errorData.message || errorData.error) {
+               errorMsg = errorData.message || errorData.error;
+            }
         } catch {}
         throw new Error(errorMsg);
       }
