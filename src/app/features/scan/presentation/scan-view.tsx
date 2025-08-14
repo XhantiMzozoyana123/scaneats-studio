@@ -21,7 +21,7 @@ import type { View } from '@/app/features/dashboard/dashboard.types';
 
 export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen } = useUserData();
+  const { setSubscriptionModalOpen } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,23 +130,22 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
   const handleSendScan = useCallback(async () => {
     if (!capturedImage) return;
 
-    if (!profile || profile.id === null) {
-      toast({
-        variant: 'destructive',
-        title: 'Profile Not Loaded',
-        description: 'Please wait a moment for your profile to load and try again.',
-      });
-      return;
+    const token = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+    
+    if (!token || !userId) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You are not logged in. Please log in again.',
+        });
+        router.push('/login');
+        return;
     }
     
     setIsSending(true);
 
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error("Authentication token not found. Please log in again.");
-      }
-      
       // The backend expects raw base64, not a data URI.
       const base64Image = capturedImage.split(',')[1];
       
@@ -154,7 +153,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         Command: "scan",
         Base64: base64Image,
         Logging: {
-            ProfileId: profile.id
+            ProfileId: userId
         }
       };
 
@@ -224,7 +223,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     } finally {
       setIsSending(false);
     }
-  }, [capturedImage, profile, toast, router, setSubscriptionModalOpen, onNavigate]);
+  }, [capturedImage, toast, router, setSubscriptionModalOpen, onNavigate]);
   
   return (
     <>
