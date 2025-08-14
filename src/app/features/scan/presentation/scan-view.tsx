@@ -51,8 +51,8 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     }
     setCameraState('starting');
 
+    // More flexible constraints
     const constraints: MediaStreamConstraints[] = [
-      { video: { facingMode: { exact: 'environment' } }, audio: false },
       { video: { facingMode: 'environment' }, audio: false },
       { video: true, audio: false },
     ];
@@ -131,9 +131,9 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     if (!capturedImage) return;
 
     const token = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
+    const userIdStr = localStorage.getItem('userId');
     
-    if (!token || !userId) {
+    if (!token || !userIdStr) {
         toast({
             variant: 'destructive',
             title: 'Authentication Error',
@@ -146,8 +146,8 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     setIsSending(true);
 
     try {
-      // The backend expects raw base64, not a data URI.
       const base64Image = capturedImage.split(',')[1];
+      const userId = parseInt(userIdStr, 10);
       
       const payload = {
         Command: "scan",
