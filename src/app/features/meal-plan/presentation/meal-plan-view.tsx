@@ -340,7 +340,7 @@ export const MealPlanView = () => {
   return (
     <div className="relative h-full w-full flex-grow">
       <video
-        src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
+        src="/images/MealPlannerPage.webm"
         className="fixed inset-0 -z-10 h-full w-full object-cover"
         autoPlay
         loop
@@ -353,7 +353,7 @@ export const MealPlanView = () => {
         <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-sizing-border shrink-0">
           <div className="w-[150px] h-[75px] text-left">
             <Image
-              src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+              src="/images/ScanEatsLogo.png"
               alt="ScanEats Logo"
               width={150}
               height={75}

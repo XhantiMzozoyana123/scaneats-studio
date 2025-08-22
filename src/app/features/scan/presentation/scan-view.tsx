@@ -230,7 +230,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     <>
       <div className="fixed inset-0 -z-10">
         <video
-          src="https://gallery.scaneats.app/images/ScanFoodNEW.webm"
+          src="/images/ScanFoodNEW.webm"
           className="h-full w-full object-cover"
           autoPlay
           loop

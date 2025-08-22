@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://api.scaneats.app';
+export const API_BASE_URL = 'https://scaneats-api.azurewebsites.net';

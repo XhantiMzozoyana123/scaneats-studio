@@ -24,12 +24,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'gallery.scaneats.app',
-        port: '',
-        pathname: '/**',
-      },
     ],
   },
 };

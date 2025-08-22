@@ -10,7 +10,7 @@ export const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     <>
       <div className="fixed inset-0 -z-10">
         <video
-          src="https://gallery.scaneats.app/images/ScanFoodNEW.webm"
+          src="/images/ScanFoodNEW.webm"
           className="h-full w-full object-cover"
           autoPlay
           loop
@@ -22,7 +22,7 @@ export const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
 
       <header className="absolute top-1 left-1 z-10 h-10 w-24">
         <Image
-          src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+          src="/images/ScanEatsLogo.png"
           alt="ScanEats Logo"
           fill
           style={{ objectFit: 'contain' }}

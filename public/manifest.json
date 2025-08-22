@@ -5,12 +5,12 @@
   "description": "Scan your food and get personalized nutrition advice with our AI-powered app.",
   "icons": [
     {
-      "src": "https://gallery.scaneats.app/images/ScanEatsLogo_192.png",
+      "src": "/images/ScanEatsLogo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://gallery.scaneats.app/images/ScanEatsLogo_512.png",
+      "src": "/images/ScanEatsLogo.png",
       "sizes": "512x512",
       "type": "image/png"
     }

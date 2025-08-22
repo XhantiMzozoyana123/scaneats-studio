@@ -11,7 +11,7 @@ export default function DownloadPage() {
       <AuthBackgroundImage />
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6 rounded-3xl bg-black/60 p-6 shadow-2xl backdrop-blur-lg sm:p-8">
         <Image
-          src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+          src="/images/ScanEatsLogo.png"
           alt="ScanEats Logo"
           width={120}
           height={120}

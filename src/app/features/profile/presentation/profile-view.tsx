@@ -125,7 +125,7 @@ export const ProfileView = () => {
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1_5,0.32)] p-5">
         <div className="mb-8 flex justify-center">
           <Image
-            src="https://gallery.scaneats.app/images/Personal%20Pic.png"
+            src="/images/Personal%20Pic.png"
             alt="Profile & Personal Goals"
             width={140}
             height={140}

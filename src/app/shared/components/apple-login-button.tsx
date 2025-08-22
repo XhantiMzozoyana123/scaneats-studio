@@ -9,7 +9,7 @@ export default function AppleLoginButton() {
 
   const handleLogin = () => {
     // This MUST exactly match the URI registered in the Apple Developer portal.
-    const redirectURI = 'https://api.scaneats.app/api/auth/apple/callback';
+    const redirectURI = 'https://scaneats-api.azurewebsites.net/api/auth/apple/callback';
     const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
 
     if (!clientId) {
